@@ -1,0 +1,6 @@
+Initial parameters: 
+ex[m rad] 	 ey[m rad] 	 sp 		 ss[m]
+2.19293e-10	2.19293e-12	9.02891e-04	2.83972e-03	
+
+Ib[mA] 	 LFtous[h] 	 LFelas[h] 	 LFine [h] 	 ex[nm rad] 	 ey[pm rad] 	 sp[%] 	 ss[mm]
+0.1160	18.61	36.39	47.93	2.45345e-01	2.33231e+00	9.73826e-02	3.06282e+00

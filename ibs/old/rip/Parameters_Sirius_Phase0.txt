@@ -1,0 +1,47 @@
+# -- beam --
+En    3.0e+9
+Np    1.2492e+09
+
+# -- lattice --
+C     518.396
+
+# -- RF cavities --
+Vrf   2.7e+6
+hh    864
+#Accelerating Cavities (6 Dampy Cavities)
+Rs0      19.8e+06
+Q0       27000
+betac    3.83
+Detune0  100e+03
+ap       0.0001739520528
+
+# -- harmonic harmonic cavity (SLS type SC HHC) --
+mharm     3
+Q0n       2e+08
+Rsn       176.8e+08
+DetuneHC  77.7e3
+
+# -- radiation integrals --
+I1   0.087318261568807
+I2   0.400501181860657
+I3   0.029528249838028
+I4   -0.132126568875210
+I5   0.000010932492042
+
+# -- Transverse acceptances --
+Ax    7.579
+# No in-vac undulatorsAy    4.572
+
+# -- betatron coupling --
+k_beta  0.01
+#Coupling through dispersion waves
+k_dw    0.000
+
+
+# -- physical constants --
+Cgamma    0.0000884628
+Cq        3.83194e-13
+Ccoul     1.602176487e-19
+r0        2.8179402894e-15
+me        0.00051099891
+cluz      299792458
