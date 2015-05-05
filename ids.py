@@ -105,11 +105,14 @@ def plot_kicktable(fname=None, energy = 3.0, print_flag=True, savefigs_flag=True
 
     # kickx
     plot_idx = [int(len(id_posy)/2), int(len(id_posy)/4), 0]
+    leg = []
     print(plot_idx)
     for i in plot_idx:
         _plt.plot(1000*_np.array(id_posx), (1e6/brho**2)*id_kickx[i,:])
+        leg.append('{0:+.2f} mm'.format(1000*id_posy[i]))
     _plt.xlabel('posx [mm]'), _plt.ylabel('kickx [um]')
     _plt.grid(), _plt.suptitle('Insertion Device Horizontal Kick')
+    _plt.legend(leg)
     if savefigs_flag:
         _plt.savefig('kickx.svg')
     if display_flag:
@@ -118,10 +121,13 @@ def plot_kicktable(fname=None, energy = 3.0, print_flag=True, savefigs_flag=True
 
     # kicky
     plot_idx = [int(len(id_posx)/2), int(len(id_posx)/4), 0]
+    leg = []
     for i in plot_idx:
         _plt.plot(1000*_np.array(id_posy), (1e6/brho**2)*id_kicky[:,i])
+        leg.append('{0:+.2f} mm'.format(1000*id_posx[i]))
     _plt.xlabel('posy [mm]'), _plt.ylabel('kicky [um]')
     _plt.grid(), _plt.suptitle('Insertion Device Vertical Kick')
+    _plt.legend(leg)
     if savefigs_flag:
         _plt.savefig('kicky.svg')
     if display_flag:
