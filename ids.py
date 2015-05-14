@@ -61,7 +61,7 @@ def select_kicktable_file():
     fname = _askopenfilename(**opt) # show an "Open" dialog box and return the path to the selected file
     return fname
 
-def plot_kicktable(fname=None, energy = 3.0, print_flag=True, savefigs_flag=True, display_flag=True):
+def plot_kicktable(fname=None, energy = 3.0, print_flag=True, savefigs_flag=True, display_flag=False):
     """Plot ID kicktable stored in a file
 
     Accepts name of file witk ID kicktable. If not provided a dialogbox will
@@ -103,10 +103,9 @@ def plot_kicktable(fname=None, energy = 3.0, print_flag=True, savefigs_flag=True
     brho,_,_,_,_ = _mathphys.beam_optics.beam_rigidity(energy = energy * 1e9)
     _os.path.basename(fname)
 
-    # kickx
+    # kickx-x
     plot_idx = [int(len(id_posy)/2), int(len(id_posy)/4), 0]
     leg = []
-    print(plot_idx)
     for i in plot_idx:
         _plt.plot(1000*_np.array(id_posx), (1e6/brho**2)*id_kickx[i,:])
         leg.append('{0:+.2f} mm'.format(1000*id_posy[i]))
@@ -114,7 +113,22 @@ def plot_kicktable(fname=None, energy = 3.0, print_flag=True, savefigs_flag=True
     _plt.grid(), _plt.suptitle('Insertion Device Horizontal Kick')
     _plt.legend(leg)
     if savefigs_flag:
-        _plt.savefig('kickx.svg')
+        _plt.savefig('kickx-x.svg')
+    if display_flag:
+        _plt.show()
+    _plt.clf()
+
+    # kickx-y
+    plot_idx = [int(len(id_posx)/2), int(len(id_posx)/4), 0]
+    leg = []
+    for i in plot_idx:
+        _plt.plot(1000*_np.array(id_posy), (1e6/brho**2)*id_kickx[:,i])
+        leg.append('{0:+.2f} mm'.format(1000*id_posx[i]))
+    _plt.xlabel('posy [mm]'), _plt.ylabel('kickx [um]')
+    _plt.grid(), _plt.suptitle('Insertion Device Horizontal Kick')
+    _plt.legend(leg)
+    if savefigs_flag:
+        _plt.savefig('kickx-y.svg')
     if display_flag:
         _plt.show()
     _plt.clf()
@@ -129,7 +143,22 @@ def plot_kicktable(fname=None, energy = 3.0, print_flag=True, savefigs_flag=True
     _plt.grid(), _plt.suptitle('Insertion Device Vertical Kick')
     _plt.legend(leg)
     if savefigs_flag:
-        _plt.savefig('kicky.svg')
+        _plt.savefig('kicky-y.svg')
+    if display_flag:
+        _plt.show()
+    _plt.clf()
+
+    # kicky
+    plot_idx = [int(len(id_posy)/2), int(len(id_posy)/4), 0]
+    leg = []
+    for i in plot_idx:
+        _plt.plot(1000*_np.array(id_posx), (1e6/brho**2)*id_kicky[i,:])
+        leg.append('{0:+.2f} mm'.format(1000*id_posy[i]))
+    _plt.xlabel('posx [mm]'), _plt.ylabel('kicky [um]')
+    _plt.grid(), _plt.suptitle('Insertion Device Vertical Kick')
+    _plt.legend(leg)
+    if savefigs_flag:
+        _plt.savefig('kicky-x.svg')
     if display_flag:
         _plt.show()
     _plt.clf()
