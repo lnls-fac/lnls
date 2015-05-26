@@ -11,5 +11,5 @@ setup(
     description='LNLS utilities',
     url='https://github.com/lnls-fac/lnls',
     package_dir={'lnls': 'src'},
-    packages=find_packages(),
+    packages=['lnls'],
 )
