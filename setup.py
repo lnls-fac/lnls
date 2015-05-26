@@ -12,4 +12,9 @@ setup(
     url='https://github.com/lnls-fac/lnls',
     package_dir={'lnls': 'src'},
     packages=['lnls'],
+
+    install_requires=[
+        'numpy>=1.8.2',
+        'matplotlib>=1.4.2'
+    ]
 )
