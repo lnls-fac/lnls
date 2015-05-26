@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 
+with open('VERSION','r') as _f:
+    __version__ = _f.read().strip()
 
 setup(
-    name='LNLS',
-    version='0.1.0',
+    name='lnls',
+    version=__version__,
     description='LNLS utilities',
     url='https://github.com/lnls-fac/lnls',
-    packages=['lnls'],
+    package_dir={'lnls': 'src'},
+    packages=find_packages(),
 )
