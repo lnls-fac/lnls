@@ -8,8 +8,8 @@ with open('VERSION','r') as _f:
 setup(
     name='lnls',
     version=__version__,
+    author='lnls-fac',
     description='LNLS utilities',
-    url='https://github.com/lnls-fac/lnls',
     url='https://github.com/lnls-fac/lnls',
     download_url='https://github.com/lnls-fac/lnls',
     license='MIT License',
