@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 with open('VERSION','r') as _f:
     __version__ = _f.read().strip()
@@ -10,7 +10,14 @@ setup(
     version=__version__,
     description='LNLS utilities',
     url='https://github.com/lnls-fac/lnls',
-    package_dir={'lnls': 'src'},
+    url='https://github.com/lnls-fac/lnls',
+    download_url='https://github.com/lnls-fac/lnls',
+    license='MIT License',
+    classifiers=[
+        'Intended Audience :: Science/Research',
+        'Programming Language :: Python',
+        'Topic :: Scientific/Engineering'
+    ],
     packages=['lnls'],
 
     install_requires=[
