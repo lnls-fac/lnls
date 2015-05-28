@@ -19,6 +19,7 @@ setup(
         'Topic :: Scientific/Engineering'
     ],
     packages=['lnls'],
+    package_data={'lnls': ['VERSION']},
 
     install_requires=[
         'numpy>=1.8.2',
