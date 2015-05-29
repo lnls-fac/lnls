@@ -24,5 +24,6 @@ setup(
     install_requires=[
         'numpy>=1.8.2',
         'matplotlib>=1.4.2'
-    ]
+    ],
+    zip_safe=False,
 )
