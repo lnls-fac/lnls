@@ -1,6 +1,7 @@
 import os as _os
 
-folder_root = '/home/fac_files'
+
+folder_root = _os.environ.get('FACROOT', '/home/fac_files')
 
 folder_data = _os.path.join(folder_root,'data')
 folder_code = _os.path.join(folder_root,'code')
