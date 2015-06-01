@@ -21,9 +21,9 @@ setup(
     packages=['lnls'],
     package_data={'lnls': ['VERSION']},
 
-    install_requires=[
-        'numpy>=1.8.2',
-        'matplotlib>=1.4.2'
-    ],
+    #install_requires=[
+    #    'numpy>=1.8.2',
+    #    'matplotlib>=1.4.2'
+    #],
     zip_safe=False,
 )
