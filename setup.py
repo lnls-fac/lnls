@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 from setuptools import setup
+from distutils.version import StrictVersion
+
 
 with open('VERSION','r') as _f:
     __version__ = _f.read().strip()
@@ -20,10 +22,5 @@ setup(
     ],
     packages=['lnls'],
     package_data={'lnls': ['VERSION']},
-
-    #install_requires=[
-    #    'numpy>=1.8.2',
-    #    'matplotlib>=1.4.2'
-    #],
     zip_safe=False,
 )
