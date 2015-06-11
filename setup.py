@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 from setuptools import setup
-from distutils.version import StrictVersion
-
 
 with open('VERSION','r') as _f:
     __version__ = _f.read().strip()
