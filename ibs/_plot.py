@@ -3,10 +3,10 @@ import _optics
 
 def plot_twiss(twiss):
 
-    s = _optics.gettwiss(twiss,'s')
-    betax = _optics.gettwiss(twiss,'betax')
-    betay = _optics.gettwiss(twiss,'betay')
-    etax  = _optics.gettwiss(twiss,'etax')
+    s = _optics.get_twiss(twiss,'s')
+    betax = _optics.get_twiss(twiss,'betax')
+    betay = _optics.get_twiss(twiss,'betay')
+    etax  = _optics.get_twiss(twiss,'etax')
 
     slimit = (s[-1]/10.0)
     sel = (s <= slimit)

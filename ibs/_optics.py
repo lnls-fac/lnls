@@ -2,9 +2,9 @@ import mathphys as _mp
 import math as _math
 import mathphys.beam_optics as _bo
 
-_twiss_dict = {'s':0,'len':1,'mux':2,'betax':3,'alphax':4,'etax':5,'etaxl':6,'muy':7,'betay':8,'alphay':9,'etay':10,'etayl':11,'eaccp_pos':12,'eaccp_neg':13}
+_twiss_dict = {'s':0,'len':1,'mux':2,'betax':3,'alphax':4,'etax':5,'etapx':6,'muy':7,'betay':8,'alphay':9,'etay':10,'etapy':11,'eaccp_pos':12,'eaccp_neg':13}
 
-def gettwiss(twiss, label):
+def get_twiss(twiss, label):
     return twiss[:,_twiss_dict[label]]
 
 def calc_rf_acceptance(parameters):
