@@ -2,7 +2,7 @@
 
 import threading as _threading
 import time as _time
-import signal
+import signal as _signal
 
 
 class TimerError(Exception):
@@ -26,9 +26,9 @@ class Timer(object):
         self._kwargs = kwargs
         self._is_running = False
         self._signal_handler = signal_handler
-        
+
         if signal_handler:
-            signal.signal(signal.SIGINT, signal_handler)
+            _signal.signal(_signal.SIGINT, signal_handler)
 
     @property
     def interval(self):
