@@ -1,19 +1,29 @@
 import os as _os
 import re as _re
 
-def get_data_paths_list(top_folder=None, recursive=True, regexp=None):
-    """List all files under 'top_folder' whose names obey regexp"""
-    if top_folder is None: top_folder = os.getcwd()
-    all_paths = []
-    try:
-        local_paths = [_os.path.join(top_folder, file) for file in _os.listdir(top_folder)]
-    except PermissionError:
-        local_paths = []
-    regexp = _re.compile(regexp)
-    for path in local_paths:
-        if _os.path.isdir(path) and not _os.path.islink(path):
-            if recursive: all_paths.extend(get_data_paths_list(path, True, regexp))
+def files_get_matches(folder=None, recursive=True, strs_in=None, strs_out=None):
+    if folder is None:
+        folder = os.getcwd()
+    if strs_in is None:
+        strs_in = ('.dat','BOB_')
+    elif isinstance(strs_in, str):
+        strs_in = (strs_in,)
+    elif isinstance(strs_out, str):
+        strs_out = (strs_out,)
+    files = []
+    local_files = _os.listdir(folder)
+    for fname in local_files:
+        path = _os.path.join(folder, fname)
+        if _os.path.isdir(path):
+            files.extend(files_get_matches(path, recursive, strs_in, strs_out))
         else:
-            #print(path)
-            if regexp.match(_os.path.basename(path)): all_paths.append(path)
-    return all_paths
+            strs_in_flag  = [1 if token in path else 0 for token in strs_in]
+            if strs_out:
+                strs_out_flag = [1 if token not in path else 0 for token in strs_out]
+            else:
+                strs_out_flag = [1,]
+            if all(strs_in_flag) and (not strs_out or all(strs_out_flag)):
+                files.append(path)
+
+    files = sorted(files, key=lambda v:v[-17:])
+    return files
