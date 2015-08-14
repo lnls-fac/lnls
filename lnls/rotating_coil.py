@@ -557,7 +557,7 @@ def merge_measurements_with_same_current(analysis_set, magnet_label=None):
         new_analysis_set.append(analysis)
     return new_analysis_set
 
-def run_excitation_curve_analysis(local_parameters):
+def run_analysis(local_parameters, analysis_type='excitation'):
 
     parameters = local_parameters.parameters
 
@@ -565,7 +565,7 @@ def run_excitation_curve_analysis(local_parameters):
     print('Analysis parameters: {0:s}'.format(parameters.label))
 
     # gets list of files (excluding I=0A data)
-    top_folder = _os.path.join(_os.getcwd(), local_parameters.excitation_data_folder)
+    top_folder = _os.path.join(_os.getcwd(), local_parameters.data_folder)
     all_files = _utils.files_get_matches(folder=top_folder, recursive=True, strs_in=['_BOB_','.dat'], strs_out='+0000A')
     print('Analysis of files in {1:s}...'.format(len(all_files), top_folder))
 
@@ -588,9 +588,10 @@ def run_excitation_curve_analysis(local_parameters):
     magnet_label = analysis_set[0].measurement.magnet_label
     harmonics = analysis_set[0].parameters.harmonics
 
-    # merge different measurements at the same current
-    print('Merge measurement data with the same current')
-    analysis_set = merge_measurements_with_same_current(analysis_set, magnet_label=magnet_label)
+    if analysis_type == 'excitation':
+        # merge different measurements at the same current
+        print('Merge measurement data with the same current')
+        analysis_set = merge_measurements_with_same_current(analysis_set, magnet_label=magnet_label)
 
     # plots excitation curve
     print('Plot of excitation curve')
@@ -631,3 +632,13 @@ def run_excitation_curve_analysis(local_parameters):
         for plot_file in plot_files + txt_files:
             new_path = _os.path.join(top_folder, 'analysis',_os.path.basename(plot_file))
             _os.rename(plot_file, new_path)
+
+def run_excitation_curve_analysis(local_parameters):
+
+    local_parameters.data_folder = local_parameters.excitation_data_folder
+    run_analysis(local_parameters, analysis_type='excitation')
+
+def run_histeresis_curve_analysis(local_parameters):
+
+    local_parameters.data_folder = local_parameters.histeresis_data_folder
+    run_analysis(local_parameters, analysis_type='histeresis')
