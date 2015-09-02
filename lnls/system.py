@@ -3,7 +3,7 @@ import os as _os
 
 folder_root = _os.environ.get('FACROOT', '/home/fac_files')
 
-folder_db = _os.path.join(folder_root, 'db')
+folder_db = _os.path.join(folder_root, 'siriusdb')
 folder_code = _os.path.join(folder_root, 'code')
 folder_data = _os.path.join(folder_root, 'data')
 folder_mml  = _os.path.join(folder_code, 'MatlabMiddleLayer', 'Release')
