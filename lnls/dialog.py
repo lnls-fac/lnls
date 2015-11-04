@@ -1,11 +1,11 @@
 import warnings
 warnings.filterwarnings('ignore')
 import os as _os
-from guidata.qt.QtGui import QApplication, QFileDialog, QWidget, QDesktopWidget
-from guidata.qt.QtGui import QListView, QTreeView, QFileSystemModel, QGridLayout
-from guidata.qt.QtGui import QPushButton, QLabel, QLineEdit
-from guidata.qt.QtGui import QAbstractItemView
-from guidata.qt.QtCore import QCoreApplication
+from PyQt5.QtWidgets import QApplication, QFileDialog, QWidget, QDesktopWidget
+from PyQt5.QtWidgets import QListView, QTreeView, QFileSystemModel, QGridLayout
+from PyQt5.QtWidgets import QPushButton, QLabel, QLineEdit
+from PyQt5.QtWidgets import QAbstractItemView
+from PyQt5.QtCore import QCoreApplication
 
 CURDIR = _os.path.abspath(_os.path.curdir)
 
@@ -14,14 +14,12 @@ def directories_dialog(path=None,name='Select Directories'):
     def _pressed_cancel():
         nonlocal ok
         Fi.close()
+        app.quit()
         ok &= False
 
     path = path or CURDIR
 
-    try:
-        app = QApplication([])
-    except RuntimeError:
-        pass
+    app = QCoreApplication.instance() or QApplication([])
 
     Fi = QFileDialog()
     Fi.setWindowTitle(name)
@@ -33,18 +31,15 @@ def directories_dialog(path=None,name='Select Directories'):
 
     Fi.setFileMode(Fi.DirectoryOnly)
     Fi.setDirectory(path)
-    for view in Fi.findChildren(QListView):
-        if isinstance(view.model(), QFileSystemModel):
-             view.setSelectionMode(QAbstractItemView.MultiSelection)
-    for view in Fi.findChildren(QTreeView):
+    for view in Fi.findChildren((QListView,QTreeView)):
         if isinstance(view.model(), QFileSystemModel):
              view.setSelectionMode(QAbstractItemView.MultiSelection)
     for view in Fi.findChildren(QPushButton):
-        if view.text().lower().startswith('cancel'):
+        if view.text().lower().startswith('&cancel'):
             view.clicked.connect(_pressed_cancel)
 
     Fi.show()
-    QCoreApplication.instance().exec_()
+    app.exec_()
 
     # The folder selection is also selecting its parent:
     sel_files = Fi.selectedFiles()
@@ -62,10 +57,12 @@ def input_dialog(prompt,def_answer=None,name='Type Parameters'):
     def _pressed_ok():
         nonlocal ok
         w.close()
+        app.quit()
         ok |= True
     def _pressed_cancel():
         nonlocal ok
         w.close()
+        app.quit()
         ok &= False
 
     if isinstance(prompt,str): prompt = [prompt]
@@ -74,10 +71,7 @@ def input_dialog(prompt,def_answer=None,name='Type Parameters'):
     if len(prompt) != len(def_answer):
         raise IndexError("'prompt' and 'def_answer' must be the same length.")
 
-    try:
-        app = QApplication([])
-    except RuntimeError:
-        pass
+    app = QCoreApplication.instance() or QApplication([])
 
     w = QWidget()
     w.setWindowTitle(name)
@@ -108,8 +102,9 @@ def input_dialog(prompt,def_answer=None,name='Type Parameters'):
     cp = QDesktopWidget().availableGeometry().center()
     qr.moveCenter(cp)
     w.move(qr.topLeft())
+
     w.show()
-    QCoreApplication.instance().exec_()
+    app.exec_()
 
     text = []
     for ed in edit:
