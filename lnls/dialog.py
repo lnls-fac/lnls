@@ -3,7 +3,7 @@ warnings.filterwarnings('ignore')
 import os as _os
 from PyQt5.QtWidgets import QApplication, QFileDialog, QWidget, QDesktopWidget
 from PyQt5.QtWidgets import QListView, QTreeView, QFileSystemModel, QGridLayout
-from PyQt5.QtWidgets import QPushButton, QLabel, QLineEdit
+from PyQt5.QtWidgets import QPushButton, QLabel, QLineEdit, QButtonGroup, QRadioButton
 from PyQt5.QtWidgets import QAbstractItemView
 from PyQt5.QtCore import QCoreApplication
 
@@ -109,4 +109,60 @@ def input_dialog(prompt,def_answer=None,name='Type Parameters'):
     text = []
     for ed in edit:
         text += [ed.text()]
+    return ok, text
+
+def radio_dialog(options, name='Selection', default_idx=0):
+
+    ok = False
+    def _pressed_ok():
+        nonlocal ok
+        w.close()
+        app.quit()
+        ok |= True
+    def _pressed_cancel():
+        nonlocal ok
+        w.close()
+        app.quit()
+        ok &= False
+
+    app = QCoreApplication.instance() or QApplication([])
+
+    w = QWidget()
+    w.setWindowTitle(name)
+    grid = QGridLayout()
+    grid.setSpacing(10)
+    edit = []
+    for i in range(len(options)):
+        r = QRadioButton(options[i])
+        if i == default_idx:
+            r.setChecked(True)
+        edit.append(r)
+        grid.addWidget(r,0,i)
+
+
+
+    #Ok Button
+    qbtn = QPushButton('Ok', w)
+    qbtn.clicked.connect(_pressed_ok)
+    qbtn.resize(qbtn.sizeHint())
+    grid.addWidget(qbtn, 2*(i+1), 0)
+    #Cancel Button
+    qbtn = QPushButton('Cancel', w)
+    qbtn.clicked.connect(_pressed_cancel)
+    qbtn.resize(qbtn.sizeHint())
+    grid.addWidget(qbtn, 2*(i+1), 1)
+
+    #Defining the layout of the window:
+    w.setLayout(grid)
+    w.resize(50, i*50)
+    qr = w.frameGeometry()
+    cp = QDesktopWidget().availableGeometry().center()
+    qr.moveCenter(cp)
+    w.move(qr.topLeft())
+
+    w.show()
+    app.exec_()
+
+    for r in edit:
+        if r.isChecked(): text = r.text()
     return ok, text
