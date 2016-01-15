@@ -4,7 +4,6 @@ from lnls.timer import *
 from . import ids
 from . import utils
 from . import rotating_coil
-from . import dialog
 
 __all__ = ['utils', 'rotating_coil', 'ids', 'dialog']
 
