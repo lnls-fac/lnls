@@ -11,3 +11,4 @@ folder_mml_sirius     = _os.path.join(folder_mml, 'lnls', 'fac_scripts', 'sirius
 folder_mml_sirius_ids = _os.path.join(folder_mml_sirius, 'insertion_devices')
 
 folder_excitation_curves = _os.path.join(folder_db, 'excitation_curves')
+folder_pulse_curves = _os.path.join(folder_db, 'pulse_curves')
