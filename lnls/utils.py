@@ -15,7 +15,8 @@ def files_get_matches(folder=None, recursive=True, strs_in=None, strs_out=None):
     for fname in local_files:
         path = _os.path.join(folder, fname)
         if _os.path.isdir(path):
-            files.extend(files_get_matches(path, recursive, strs_in, strs_out))
+            if recursive:
+                files.extend(files_get_matches(path, recursive, strs_in, strs_out))
         else:
             strs_in_flag  = [1 if token in path else 0 for token in strs_in]
             if strs_out:
