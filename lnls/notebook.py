@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from IPython.display import HTML as _HTML
-from matplotlib import rcParams as _rcParams
 
 def turn_code_on_off_html():
     string  = '''<script type="text/javascript">
@@ -34,7 +33,3 @@ The raw code for this IPython notebook is by default hidden for easier reading.
 <form action="javascript:code_toggle()"><input type="submit"
 value="Click here or press CRTL+ALT+H to toggle the code on/off."></form>'''
     return _HTML(string)
-
-def matplotlib_notebook(): _rcParams['backend'] = 'nbAgg'
-
-def matplotlib_inline(): _rcParams['backend'] = 'module://ipykernel.pylab.backend_inline'
