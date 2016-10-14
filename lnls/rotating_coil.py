@@ -20,11 +20,10 @@ class AnalysisParameters():
         pass
     def __str__(self):
         r = ''
-        r += '\n\n--- parameters ---\n\n'
         r += '{0:<30s} {1:s}'.format('label', self.label)
-        r += '\n{0:<30s} {1:s}'.format('main_harmonic', '{0:d} ({1:s})'.format(self.main_multipole_harmonic, get_label(self.main_multipole_harmonic)))
+        r += '\n{0:<30s} {1:s}'.format('main_harmonic', '{0:d} ({1:s})'.format(self.main_multipole_harmonic, get_harmonic_label(self.main_multipole_harmonic)))
         r += '\n{0:<30s} {1:s}'.format('main_harmonic_is_skew', str(self.main_multipole_is_skew))
-        r += '\n{0:<30s} {1:f}'.format('reference_radius[m]', self.ref_radius)
+        r += '\n{0:<30s} {1:f}'.format('reference_radius[mm]', 1000*self.ref_radius)
         r += '\n{0:<30s} {1:s}'.format('harmonics', str(self.harmonics))
         return r
 
@@ -335,6 +334,12 @@ class Analysis:
 class AnalysisFromSet:
     pass
 
+def get_harmonic_label(n):
+    dic = {1:'dipole',2:'quadrupole',3:'sextupole',4:'octupole',5:'decapole',6:'dudecapole'}
+    if n > max(dic.keys()):
+        return str(n)
+    else:
+        return dic[n]
 
 def run_analysis(parms, fnames):
     '''reads data and does multipolar analysis, store it in "analysis"'''
