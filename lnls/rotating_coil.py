@@ -89,7 +89,7 @@ class SI_Q14_AnalysisParameters(AnalysisParameters):
         self.x_misalignment_spec = 40      #[um]
         self.y_misalignment_spec = 40      #[um]
         self.roll_rotation_spec  = 0.3     #[mrad]
-        self.max_integ_mult_spec = -5.2116 #[T]
+        self.max_integ_mult_spec = 5.2116 #[T]
         self.excitation_rms_spec = 0.05    #[%]
         self.multipoles_spec = {
             # (normal_sys, skew_sys) (normal_std, skew_std)
@@ -456,7 +456,7 @@ def plot_excitation_curve(data, parms, current_grid, current_threshold=0.0, show
 
     return I, mult_rel
 
-def plot_relative_multipoles(data, parms, h, mtype='normal', current_threshold=0.0, currents = None, show=False):
+def plot_relative_multipoles(data, parms, h, mtype='normal', current_threshold=0.0, currents = None, show=False, xlim=None, ylim=None):
 
     if currents is None: currents = []
     idx = parms.harmonics.index(h)
@@ -492,6 +492,8 @@ def plot_relative_multipoles(data, parms, h, mtype='normal', current_threshold=0
     _plt.plot([minc,maxc],[sys+rms,sys+rms], 'k--')
     for c in currents:
         _plt.plot([c,c],[minm,maxm], 'k--')
+    if xlim: _plt.xlim(xlim)
+    if ylim: _plt.ylim(ylim)
     _plt.xlabel('Current [A]')
     _plt.ylabel('Relative multipole @ r = ' + str(parms.ref_radius * 1000) + ' mm')
     _plt.grid('on')
