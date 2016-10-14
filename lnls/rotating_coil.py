@@ -87,11 +87,11 @@ class SI_Q14_AnalysisParameters(AnalysisParameters):
         self.main_multipole_is_skew  = False
         self.harmonics = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18] # [1: dipole, 2:quadrupole, ...]
         self.ref_radius = 0.012 # [m]
-        self.x_misalignment_spec = 40     #[um]
-        self.y_misalignment_spec = 40     #[um]
-        self.roll_rotation_spec  = 0.3    #[mrad]
-        self.max_integ_mult_spec = -4.255 #[T]
-        self.excitation_rms_spec = 0.05   #[%]
+        self.x_misalignment_spec = 40      #[um]
+        self.y_misalignment_spec = 40      #[um]
+        self.roll_rotation_spec  = 0.3     #[mrad]
+        self.max_integ_mult_spec = -5.2116 #[T]
+        self.excitation_rms_spec = 0.05    #[%]
         self.multipoles_spec = {
             # (normal_sys, skew_sys) (normal_std, skew_std)
             3: ((0,0),               (1.5e-4,0.5e-4)),
