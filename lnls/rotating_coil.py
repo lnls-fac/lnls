@@ -749,7 +749,7 @@ def calc_excitation_curve_nonlinearity(meas_data_set, parms, currents, show=True
 
     return fit_error, currents, multipoles_avg
 
-def plot_histeresis(meas_data_set, parms, currents, show=True, save=False, ax=None):
+def plot_hysteresis(meas_data_set, parms, currents, show=True, save=False, ax=None):
 
     labels = {1:'Integrated dipole [T.m]',
               2:'Integrated quadrupole [T]',
