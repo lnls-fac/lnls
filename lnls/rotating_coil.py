@@ -8,6 +8,7 @@ import numpy as _numpy
 import math as _math
 import mathphys as _mp
 import matplotlib.pyplot as _plt
+import matplotlib.gridspec as _gridspec
 import matplotlib.ticker as _ticker
 import os as _os
 import lnls.utils as _utils
@@ -89,7 +90,7 @@ class SI_Q14_AnalysisParameters(AnalysisParameters):
         self.x_misalignment_spec = 40      #[um]
         self.y_misalignment_spec = 40      #[um]
         self.roll_rotation_spec  = 0.3     #[mrad]
-        self.max_integ_mult_spec = 5.2116 #[T]
+        self.max_integ_mult_spec = 5.2116  #[T]
         self.excitation_rms_spec = 0.05    #[%]
         self.multipoles_spec = {
             # (normal_sys, skew_sys) (normal_std, skew_std)
@@ -100,6 +101,30 @@ class SI_Q14_AnalysisParameters(AnalysisParameters):
             10:((+1.7e-3,0),         (0,0)),
             14:((-8.0e-4,0),         (0,0)),
             18:((+8.5e-5,0),         (0,0)),
+        }
+
+class SI_Q20_AnalysisParameters(AnalysisParameters):
+
+    def __init__(self):
+        self.label = 'Parameters for SI Q20 quadrupoles'
+        self.main_multipole_harmonic = 2  # [1: dipole, 2:quadrupole, ...]
+        self.main_multipole_is_skew  = False
+        self.harmonics = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18] # [1: dipole, 2:quadrupole, ...]
+        self.ref_radius = 0.012 # [m]
+        self.x_misalignment_spec = 40      #[um]
+        self.y_misalignment_spec = 40      #[um]
+        self.roll_rotation_spec  = 0.3     #[mrad]
+        self.max_integ_mult_spec = 9.08629 #[T]
+        self.excitation_rms_spec = 0.05    #[%]
+        self.multipoles_spec = {
+            # (normal_sys, skew_sys) (normal_std, skew_std)
+            3: ((0,0),               (1.5e-4,0.5e-4)),
+            4: ((0,0),               (1.5e-4,0.5e-4)),
+            5: ((0,0),               (1.5e-4,0.5e-4)),
+            6: ((-4.1e-4,0),         (1.5e-4,0.5e-4)),
+            10:((+1.7e-3,0),         (0,0)),
+            14:((-7.7e-4,0),         (0,0)),
+            18:((+5.9e-5,0),         (0,0)),
         }
 
 class RadialRotatingCoil:
@@ -315,13 +340,13 @@ class Analysis:
         r += '{0:2s}  {1:<11s}  {2:<11s}  {3:<11s}  {4:<11s}    {5:<10s}\n'.format('n', 'avg (Nn/Mp)','std (Nn/Mp)','avg (Sn/Mp)','std (Sn/Mp)', 'label')
         for i in range(len(self.parameters.harmonics)):
             h = self.parameters.harmonics[i]
-            r += '{0:02d}  {1:+.4e}  {2:.4e}   {3:+.4e}  {4:.4e}    {5:<10s}\n'.format(h, self.polynom_b_relative_avg[i], self.polynom_b_relative_std[i], self.polynom_a_relative_avg[i], self.polynom_a_relative_std[i], get_label(h))
+            r += '{0:02d}  {1:+.4e}  {2:.4e}   {3:+.4e}  {4:.4e}    {5:<10s}\n'.format(h, self.polynom_b_relative_avg[i], self.polynom_b_relative_std[i], self.polynom_a_relative_avg[i], self.polynom_a_relative_std[i], get_harmonic_label(h))
         r += '\n'
         r += 'integrated multipoles\n'
         r += '{0:2s}  {1:<11s}  {2:<11s}  {3:<11s}  {4:<11s}    {5:<10s}    units\n'.format('n', '  avg (Nn)',' std (Nn)','  avg (Sn)',' std (Sn)', 'label')
         for i in range(len(self.parameters.harmonics)):
             h = self.parameters.harmonics[i]
-            r += '{0:02d}  {1:+.4e}  {2:.4e}   {3:+.4e}  {4:.4e}    {5:<10s}    {6:s}\n'.format(h, self.polynom_b_avg[i], self.polynom_b_std[i], self.polynom_a_avg[i], self.polynom_a_std[i], get_label(h), get_units(h))
+            r += '{0:02d}  {1:+.4e}  {2:.4e}   {3:+.4e}  {4:.4e}    {5:<10s}    {6:s}\n'.format(h, self.polynom_b_avg[i], self.polynom_b_std[i], self.polynom_a_avg[i], self.polynom_a_std[i], get_harmonic_label(h), get_units(h))
         r += '\nlegend:'
         r += '\nNn   : integrated normal 2n-polar field'
         r += '\nSn   : integrated skew 2n-polar field'
@@ -341,6 +366,13 @@ def get_harmonic_label(n):
     else:
         return dic[n]
 
+def get_units(harmonic):
+    try:
+        u = {1:'T.m',2:'T',3:'T/m'}[harmonic]
+    except:
+        u = 'T/m^{0:d}'.format(harmonic-2)
+    return u
+
 def run_analysis(parms, fnames):
     '''reads data and does multipolar analysis, store it in "analysis"'''
     analysis = []
@@ -352,22 +384,22 @@ def run_analysis(parms, fnames):
         analysis.append(a)
     return analysis
 
-def select_ramp_up(data, current_threshold=0.0):
+def select_ramp_up(current_data_set, current_threshold=0.0):
     '''returns only ramp up points from a data set'''
     c = -float('inf')
     new_data = []
-    for d in data:
-        current = d.measurement.current1_avg
+    for data in current_data_set:
+        current = data.measurement.current1_avg
         if abs(current) > current_threshold:
             if current < c: break
             c = current
-            new_data.append(d)
+            new_data.append(data)
     return new_data
 
-def get_remanent_field(data, current_threshold=0.0):
+def get_remanent_field(magnet_data_set, current_threshold=0.0):
     '''does a remanent field calculation from a data set'''
     currents, polya, polyb = [], [], []
-    for d1 in data:
+    for d1 in magnet_data_set:
         for d2 in d1:
             for d3 in d2:
                 current = d3.measurement.current1_avg
@@ -381,20 +413,21 @@ def get_remanent_field(data, current_threshold=0.0):
     polyb_std = _numpy.std (_numpy.array(polyb), axis=0)
     return ((polya_avg,polya_std),(polyb_avg,polyb_std))
 
-def get_maximum_main_multipole(data, parms, current_threshold=0.0):
+def get_maximum_main_multipole(current_data_set, parms, current_threshold=0.0):
     '''returns maximum value of main multipole'''
-    selection = select_ramp_up(data, current_threshold=current_threshold)
+    selection = select_ramp_up(current_data_set, current_threshold=current_threshold)
     idx = parms.harmonics.index(parms.main_multipole_harmonic)
+    max_current = selection[-1].measurement.current1_avg
     if parms.main_multipole_is_skew:
-        return selection[-1].polynom_a_avg[idx]
+        return selection[-1].polynom_a_avg[idx], max_current
     else:
-        return selection[-1].polynom_b_avg[idx]
+        return selection[-1].polynom_b_avg[idx], max_current
 
-def get_multipole_from_data_set(data, parms, h, mtype='normal', relative=False):
+def get_multipole_from_data_set(current_data_set, parms, h, mtype='normal', relative=False):
     '''exctracts from data set current and multipole'''
     idx = parms.harmonics.index(h)
     c, multipole = [],[]
-    for d in data:
+    for d in current_data_set:
         c.append(d.measurement.current1_avg)
         if mtype == 'normal':
             if relative:
@@ -408,55 +441,18 @@ def get_multipole_from_data_set(data, parms, h, mtype='normal', relative=False):
                 multipole.append(d.polynom_a_avg[idx])
     return c, multipole
 
-def plot_excitation_curve(data, parms, current_grid, current_threshold=0.0, show=False):
-    '''plots excitation curves'''
+def find_current(meas_data_set, parms, multi_norm, energy, mtype='normal', current_threshold=0.0):
+    brho, *_ = _mp.beam_optics.beam_rigidity(energy = energy)
+    multi = - multi_norm * brho
+    current = []
+    for d1 in meas_data_set:
+        d2 = select_ramp_up(d1, current_threshold)
+        c,s = get_multipole_from_data_set(d2, parms, parms.main_multipole_harmonic, mtype='normal', relative=False)
+        tc = _numpy.interp(multi, s, c, left=float('nan'), right=float('nan'))
+        current.append(tc)
+    return _numpy.mean(current), _numpy.std(current)
 
-    labels = {1:'Integrated dipole [T.m]',
-              2:'Integrated quadrupole [T]',
-              3:'Integrated sextupole [T/m]'}
-
-    c = current_grid
-    I = _numpy.linspace(c[0], c[1], c[2])
-    _plt.clf()
-    c = -1
-    multi_set = []
-    for meas_set in data:
-        c = c+1 % len(_colors)
-        for d2 in meas_set:
-            d = select_ramp_up(d2, current_threshold)
-            currents, multipoles = get_multipole_from_data_set(d, parms, h=parms.main_multipole_harmonic, mtype='normal', relative=False)
-            interpMulti = _numpy.interp(I, currents, multipoles)
-            multi_set.append(interpMulti)
-            _plt.plot(currents, multipoles, _colors[c])
-
-    _plt.xlabel('Current [A]')
-    _plt.ylabel(labels[parms.main_multipole_harmonic])
-    _plt.grid('on')
-    _plt.title('Excitation Curves')
-    _plt.savefig('excitation_curves.png')
-    if show: _plt.show()
-
-    _plt.clf()
-    multi_avg = _numpy.mean(_numpy.array(multi_set), axis=0)
-    multi_std = _numpy.std(_numpy.array(multi_set), axis=0)
-    for d in multi_set:
-        difrel = 100*(_numpy.array(d) - multi_avg)/multi_avg
-        _plt.plot(I, difrel, 'b')
-    mult_rel = 100*multi_std/abs(multi_avg)
-    _plt.plot(I,mult_rel, 'r')
-    rms_spec = parms.excitation_rms_spec
-    _plt.plot([min(I), max(I)], [+rms_spec, +rms_spec], 'k--')
-    _plt.plot([min(I), max(I)], [-rms_spec, -rms_spec], 'k--')
-    _plt.grid('on')
-    _plt.xlabel('Current [A]')
-    _plt.ylabel('excitation curve rms [%]')
-    _plt.title('Excitation Curve R.M.S')
-    _plt.savefig('excitation_curve_rms.png')
-    if show: _plt.show()
-
-    return I, mult_rel
-
-def plot_relative_multipoles(data, parms, h, mtype='normal', current_threshold=0.0, currents = None, show=False, xlim=None, ylim=None):
+def plot_relative_multipoles(magnet_data_set, parms, h, mtype='normal', current_threshold=0.0, currents = None, label = None, show=False, xlim=None, ylim=None, ax=None):
 
     if currents is None: currents = []
     idx = parms.harmonics.index(h)
@@ -470,54 +466,55 @@ def plot_relative_multipoles(data, parms, h, mtype='normal', current_threshold=0
     else:
         sys, rms = r[0][1], r[1][1]
 
-    _plt.clf()
+    if not ax:
+        f = _plt.figure()
+        ax = _plt.axes()
+    f = ax.get_figure()
+
+    #_plt.clf()
     c = -1
     minc, maxc = float('inf'), -float('inf')
     minm, maxm = float('inf'), -float('inf')
-    for d1 in data:
+    for d1 in magnet_data_set:
         c = (c+1) % len(_colors)
         first = True
         for d2 in d1:
             d3 = select_ramp_up(d2, current_threshold)
+            if not label:
+                label = d3[0].measurement.magnet_label
             cu, mu = get_multipole_from_data_set(d3, parms, h=h, mtype=mtype, relative=True)
             if first:
-                _plt.plot(cu, mu, _colors[c], label = d3[0].measurement.magnet_label)
+                ax.plot(cu, mu, _colors[c], label = label)
                 first = False
             else:
-                _plt.plot(cu, mu, _colors[c])
+                ax.plot(cu, mu, _colors[c])
             minc, maxc = min([minc,min(cu)]), max([maxc,max(cu)])
             minm, maxm = min([minm,min(mu)]), max([maxm,max(mu)])
-    _plt.plot([minc,maxc],[sys-rms,sys-rms], 'k--')
-    _plt.plot([minc,maxc],[sys,sys], 'k')
-    _plt.plot([minc,maxc],[sys+rms,sys+rms], 'k--')
+    ax.plot([minc,maxc],[sys-rms,sys-rms], 'k--')
+    ax.plot([minc,maxc],[sys,sys], 'k')
+    ax.plot([minc,maxc],[sys+rms,sys+rms], 'k--')
     for c in currents:
-        _plt.plot([c,c],[minm,maxm], 'k--')
-    if xlim: _plt.xlim(xlim)
-    if ylim: _plt.ylim(ylim)
-    _plt.xlabel('Current [A]')
-    _plt.ylabel('Relative multipole @ r = ' + str(parms.ref_radius * 1000) + ' mm')
-    _plt.grid('on')
-    _plt.legend(loc='best')
+        ax.plot([c,c],[minm,maxm], 'k--')
+    if xlim: ax.set_xlim(xlim)
+    if ylim: ax.set_ylim(ylim)
+    ax.set_xlabel('Current [A]')
+    ax.set_ylabel('Relative multipole @ r = ' + str(parms.ref_radius * 1000) + ' mm')
+    ax.grid('on')
+    ax.legend(loc='best')
     if mtype == 'normal':
-        _plt.title('Relative normal multipole of order h = ' + str(h))
-        _plt.savefig('relative_normal_multipole_{0:02d}.png'.format(h))
+        ax.set_title('Relative normal multipole of order h = ' + str(h))
+        f.savefig('relative_normal_multipole_{0:02d}.png'.format(h))
     else:
-        _plt.title('Relative skew multipole of order h = ' + str(h))
-        _plt.savefig('relative_skew_multipole_{0:02d}.png'.format(h))
-    if show: _plt.show()
+        ax.set_title('Relative skew multipole of order h = ' + str(h))
+        f.savefig('relative_skew_multipole_{0:02d}.png'.format(h))
+    if show: f.show()
 
-def find_current(data, parms, multi_norm, energy, mtype='normal', current_threshold=0.0):
-    brho, *_ = _mp.beam_optics.beam_rigidity(energy = energy)
-    multi = - multi_norm * brho
-    current = []
-    for d1 in data:
-        d2 = select_ramp_up(d1, current_threshold)
-        c,s = get_multipole_from_data_set(d2, parms, parms.main_multipole_harmonic, mtype='normal', relative=False)
-        tc = _numpy.interp(multi, s[::-1], c[::-1], left=float('nan'), right=float('nan'))
-        current.append(tc)
-    return _numpy.mean(current), _numpy.std(current)
+def plot_magnetic_center(magnet_data_set, parms, mtype='normal', currents=None, show=False, xlim=None, ylim=None, ax=None):
 
-def plot_magnetic_center(data, parms, mtype='normal', currents=None, show=False):
+    if not ax:
+        f = _plt.figure()
+        ax = _plt.axes()
+    f = ax.get_figure()
 
     if currents is None: currents = []
     sys = 0.0
@@ -526,11 +523,10 @@ def plot_magnetic_center(data, parms, mtype='normal', currents=None, show=False)
     else:
         rms = parms.y_misalignment_spec
 
-    _plt.clf()
     c = -1
     minc, maxc = float('inf'), -float('inf')
     minm, maxm = float('inf'), -float('inf')
-    for d1 in data:
+    for d1 in magnet_data_set:
         c = (c+1) % len(_colors)
         first = True
         for d2 in d1:
@@ -552,30 +548,46 @@ def plot_magnetic_center(data, parms, mtype='normal', currents=None, show=False)
                 else:
                     mu.append(1e6*z.imag)
             if first:
-                _plt.plot(cu, mu, _colors[c], label=d4.measurement.magnet_label)
+                ax.plot(cu, mu, _colors[c], label=d4.measurement.magnet_label)
                 first = False
             else:
-                _plt.plot(cu, mu, _colors[c])
+                ax.plot(cu, mu, _colors[c])
             minc, maxc = min([minc,min(cu)]), max([maxc,max(cu)])
             minm, maxm = min([minm,min(mu)]), max([maxm,max(mu)])
-    _plt.plot([minc,maxc],[sys-rms,sys-rms], 'k--')
-    _plt.plot([minc,maxc],[sys,sys], 'k')
-    _plt.plot([minc,maxc],[sys+rms,sys+rms], 'k--')
-    _plt.legend(loc='best')
+    ax.plot([minc,maxc],[sys-rms,sys-rms], 'k--')
+    ax.plot([minc,maxc],[sys,sys], 'k')
+    ax.plot([minc,maxc],[sys+rms,sys+rms], 'k--')
+    ax.legend(loc='best')
     for c in currents:
-        _plt.plot([c,c],[minm,maxm],'k--')
-    _plt.xlabel('Current [A]')
-    _plt.ylabel('Position [um]')
+        if ylim:
+            ax.plot([c,c],ylim,'k--')
+        else:
+            ax.plot([c,c],[mimm,maxm],'k--')
+    if xlim: ax.set_xlim(xlim)
+    if ylim: ax.set_ylim(ylim)
+    ax.set_xlabel('Current [A]')
+    ax.set_ylabel('Position [um]')
     _plt.grid('on')
     if mtype == 'normal':
-        _plt.title('Horizontal position where quadrupole vanishes')
+        if parms.main_multipole_harmonic == 3:
+            ax.set_title('Horizontal position where quadrupole vanishes')
+        else:
+            ax.set_title('Horizontal position where field vanishes')
         _plt.savefig('magnetic_center_horizontal_pos.png')
     else:
-        _plt.title('Vertical position where quadrupole vanishes')
+        if parms.main_multipole_harmonic == 3:
+            ax.set_title('Vertical position where field vanishes')
+        else:
+            ax.set_title('Vertical position where field vanishes')
         _plt.savefig('magnetic_center_vertical_pos.png')
     if show: _plt.show()
 
-def plot_rotation_angle(data, parms, currents = None, show=False):
+def plot_rotation_angle(magnet_data_set, parms, currents = None, show=False, ax=None):
+
+    if not ax:
+        f = _plt.figure()
+        ax = _plt.axes()
+    f = ax.get_figure()
 
     sys = 0
     rms = parms.roll_rotation_spec  #[mrad]
@@ -583,11 +595,10 @@ def plot_rotation_angle(data, parms, currents = None, show=False):
 
     if currents is None: currents = []
 
-    _plt.clf()
     c = -1
     minc, maxc = float('inf'), -float('inf')
     minm, maxm = float('inf'), -float('inf')
-    for d1 in data:
+    for d1 in magnet_data_set:
         c = (c+1) % len(_colors)
         first = True
         for d2 in d1:
@@ -598,50 +609,46 @@ def plot_rotation_angle(data, parms, currents = None, show=False):
                 angle = _math.atan(d4.polynom_a_avg[idx]/d4.polynom_b_avg[idx])/(parms.main_multipole_harmonic-1)
                 mu.append(1e3*angle)
             if first:
-                _plt.plot(cu, mu, _colors[c], label = d4.measurement.magnet_label)
+                ax.plot(cu, mu, _colors[c], label = d4.measurement.magnet_label)
                 first = False
             else:
-                _plt.plot(cu, mu, _colors[c])
+                ax.plot(cu, mu, _colors[c])
             minc, maxc = min([minc,min(cu)]), max([maxc,max(cu)])
             minm, maxm = min([minm,min(mu)]), max([maxm,max(mu)])
-    _plt.plot([minc,maxc],[sys-rms,sys-rms], 'k--')
-    _plt.plot([minc,maxc],[sys,sys], 'k')
-    _plt.plot([minc,maxc],[sys+rms,sys+rms], 'k--')
+    ax.plot([minc,maxc],[sys-rms,sys-rms], 'k--')
+    ax.plot([minc,maxc],[sys,sys], 'k')
+    ax.plot([minc,maxc],[sys+rms,sys+rms], 'k--')
     for c in currents:
-        _plt.plot([c,c],[minm,maxm], 'k--')
-    _plt.legend(loc='best')
+        ax.plot([c,c],[minm,maxm], 'k--')
+    ax.legend(loc='best')
     for c in currents:
-        _plt.plot([c,c],[minm,maxm],'k--')
-    _plt.xlabel('Current [A]')
-    _plt.ylabel('Rotation angle [mrad]')
-    _plt.grid('on')
-    _plt.title('Rotation angle from sextupole components')
+        ax.plot([c,c],[minm,maxm],'k--')
+    ax.set_xlabel('Current [A]')
+    ax.set_ylabel('Rotation angle [mrad]')
+    ax.grid('on')
+    ax.set_title('Rotation angle from main multipole component')
+
     _plt.savefig('rotation_angle.png')
     if show: _plt.show()
 
-def print_multipoles(data, parms, current, current_threshold=0.0):
+def print_multipoles_single_magnet(meas_data_set, parms, current, current_threshold=0.0):
 
     pa_avg, pa_std = [], []
     pb_avg, pb_std = [], []
-    strheader = '{0:<3s}: {1:^24s}  |  {1:^24s}'.format('h','(B_n/B_2)@r_0', '(A_n/B_2)@r_0')
+    strheader = '{0:<3s}: {1:^24s}  |  {2:^24s}'.format('h','(B_n/B_2)@r_0', '(A_n/B_2)@r_0')
     print(strheader)
     print('-'*len(strheader))
     for i in range(len(parms.harmonics)):
         polya, polyb = [], []
-        for d1 in data:
-            t1polya, t1polyb = [], []
-            for d2 in d1:
-                d = select_ramp_up(d2, current_threshold)
-                curr, tpolya, tpolyb = [], [], []
-                for d3 in d:
-                    curr.append(d3.measurement.current1_avg)
-                    tpolya.append(d3.polynom_a_relative_avg[i])
-                    tpolyb.append(d3.polynom_b_relative_avg[i])
-                t1polya.append(_numpy.interp(current, curr, tpolya))
-                t1polyb.append(_numpy.interp(current, curr, tpolyb))
-            polya.append(_numpy.mean(t1polya))
-            polyb.append(_numpy.mean(t1polyb))
-
+        for d2 in meas_data_set: # over different measurements for one magnet
+            d = select_ramp_up(d2, current_threshold)
+            curr, tpolya, tpolyb = [], [], []
+            for d3 in d: # over different excitation currents
+                curr.append(d3.measurement.current1_avg)
+                tpolya.append(d3.polynom_a_relative_avg[i])
+                tpolyb.append(d3.polynom_b_relative_avg[i])
+            polya.append(_numpy.interp(current, curr, tpolya))
+            polyb.append(_numpy.interp(current, curr, tpolyb))
         polya_avg, polya_std = _numpy.mean(polya), _numpy.std(polya)
         polyb_avg, polyb_std = _numpy.mean(polyb), _numpy.std(polyb)
         pa_avg.append(polya_avg), pa_std.append(polya_std)
@@ -663,399 +670,112 @@ def print_multipoles(data, parms, current, current_threshold=0.0):
     for d in pa_std: print('{0:+.1e},'.format(d), end='')
     print(']')
 
-def plot_magnetic_center2(data, parms, current, mtype='normal', current_threshold=0.0, show=False):
+def get_excitation_curve(current_data_set, parms):
+    harmonics = parms.harmonics
+    main_harmonic_idx = harmonics.index(parms.main_multipole_harmonic)
+    data = select_ramp_up(current_data_set, current_threshold=0.0)
+    currents, exctable = [], _numpy.zeros((len(data),len(harmonics)))
+    for i in range(len(data)):
+        currents.append(data[i].measurement.current1_avg)
+        exctable[i,:] = data[i].polynom_b_avg
+    exccurve = exctable[:,main_harmonic_idx]
+    return exctable, exccurve, currents, harmonics, parms.main_multipole_harmonic
 
-    if currents is None: currents = []
-    sys = 0.0
-    if mtype == 'normal':
-        rms = parms.x_misalignment_spec
-    else:
-        rms = parms.y_misalignment_spec
+def get_average_excitation_curve(meas_data_set, parms, currents):
+    multipoles_sum1, multipoles_sum2 = 0,0
+    for current_data_set in meas_data_set:
+        exctable, exccurve, tcurrents, harmonics, main_multipole_harmonic = get_excitation_curve(current_data_set, parms)
+        multipoles = _numpy.zeros((len(currents),len(harmonics)))
+        for i in range(len(harmonics)):
+            multipoles[:,i] = _numpy.interp(currents, tcurrents, exctable[:,i], left=float('nan'), right=float('nan'))
+        multipoles_sum1 += multipoles
+        multipoles_sum2 += multipoles**2
+    multipoles_avg = multipoles_sum1/len(meas_data_set)
+    multipoles_std = _numpy.sqrt(multipoles_sum2/len(meas_data_set) - multipoles_avg**2)
+    return multipoles_avg, multipoles_std, harmonics, main_multipole_harmonic
 
-    magnet,center = [],[]
-    for d1 in data:
-        z = 0 + 0*1j
-        for d2 in d1:
-            d3 = select_ramp_up(d2, 0.5)
-            if parms.main_multipole_harmonic == 2:
-                c,d = get_multipole_from_data_set(d3, parms, h=1, mtype='normal', relative=False)
-                DB = _numpy.interp(current, c, d, left=float('nan'), right=float('nan'))
-                c,d = get_multipole_from_data_set(d3, parms, h=1, mtype='skew', relative=False)
-                DA = _numpy.interp(current, c, d, left=float('nan'), right=float('nan'))
-                c,q = get_multipole_from_data_set(d3, parms, h=2, mtype='normal', relative=False)
-                QB = _numpy.interp(current, c, q, left=float('nan'), right=float('nan'))
-                c,q = get_multipole_from_data_set(d3, parms, h=2, mtype='skew', relative=False)
-                QA = _numpy.interp(current, c, q, left=float('nan'), right=float('nan'))
-                D = DB + 1j * DA
-                Q = QB + 1j * QA
-                z += _numpy.roots([Q,D])
-        z /= len(d1)
-        magnet.append(d3[0].measurement.magnet_name)
-        if mtype == 'normal':
-            center.append(1e6*z.real)
-        else:
-            center.append(1e6*z.imag)
+def plot_excitation_curve(meas_data_set, parms, currents, show=True, save=False, ax=None):
 
+    labels = {1:'Integrated dipole [T.m]',
+              2:'Integrated quadrupole [T]',
+              3:'Integrated sextupole [T/m]'}
 
-# def get_units(harmonic):
-#     try:
-#         u = {1:'T.m',2:'T',3:'T/m'}[harmonic]
-#     except:
-#         u = 'T/m^{0:d}'.format(harmonic-2)
-#     return u
-#
-# def get_label(harmonic):
-#     try:
-#         m = {1:'dipole',2:'quadrupole',3:'sextupole',4:'octupole',5:'decapole',6:'dudecapole'}[harmonic]
-#     except:
-#         m = '{0:d}-polar'.format(2*harmonic)
-#     return m
-#
-# def get_multipole_name(harmonic,mult_type=None,ref_radius=None):
-#     m = get_label(harmonic)
-#     if ref_radius:
-#         r = 'Normalized ' + mult_type.lower() + ' ' + m + ' (at r = {0:.1f} mm)'.format(1000*ref_radius)
-#     else:
-#         u = get_units(harmonic)
-#         r = mult_type.lower().capitalize() + ' ' + m + ' / ({0:s})'.format(u)
-#     return r
-#
-# def plot_harmonic_analysis(analysis, ylim=None, show_fig=False, save_fig=True):
-#
-#     if ylim is None: ylim=(1e-6,1e-1)
-#     filename = _os.path.splitext(_os.path.basename(analysis.measurement.filename))[0]
-#     harmonics = analysis.parameters.harmonics
-#     ref_radius = analysis.parameters.ref_radius
-#     # Normal
-#     _plt.clf()
-#     multipoles = analysis.polynom_b_relative_avg
-#     multipoles_err = analysis.polynom_b_relative_std
-#     colors = ['red' if value < 0 else 'blue' for value in multipoles]
-#     _plt.bar(harmonics, abs(multipoles), yerr=multipoles_err, log=True, color=colors, error_kw=dict(elinewidth=2,ecolor='black'), align='center')
-#     _plt.ylim(ylim)
-#     _plt.title(filename)
-#     _plt.xlabel('harmonics (dipole:n=1)')
-#     _plt.ylabel('relative normal multipole (at r = {0:.1f} mm)'.format(1000*ref_radius))
-#     _plt.grid('on')
-#     if show_fig: _plt.show()
-#     if save_fig: _plt.savefig('normal_' + filename + '.png')
-#     # Skew
-#     _plt.clf()
-#     multipoles = analysis.polynom_a_relative_avg
-#     multipoles_err = analysis.polynom_a_relative_std
-#     colors = ['red' if value < 0 else 'blue' for value in multipoles]
-#     _plt.bar(harmonics, abs(multipoles), yerr=multipoles_err, log=True, color=colors, error_kw=dict(elinewidth=2,ecolor='black'), align='center')
-#     _plt.ylim(ylim)
-#     _plt.title(filename)
-#     _plt.xlabel('harmonics (dipole:n=1)')
-#     _plt.ylabel('relative skew multipole (at r = {0:.1f} mm)'.format(1000*ref_radius))
-#     _plt.grid('on')
-#     if show_fig: _plt.show()
-#     if save_fig: _plt.savefig('skew_' + filename + '.png')
-#
-# def plot_skew_rotation_vs_current(analysis_set, show_fig=False, save_fig=True):
-#     current, angle, angle_err = [], [], []
-#     for analysis in analysis_set:
-#         parameters = analysis.parameters
-#         data = analysis.measurement if hasattr(analysis,'measurement') else analysis
-#         magnet_name = data.magnet_label
-#         main_harmonic = analysis.parameters.main_multipole_harmonic
-#         idx = analysis.parameters.harmonics.index(main_harmonic)
-#         current.append(data.current1_avg)
-#         a = 1000 * _math.atan(analysis.polynom_a_relative_avg[idx])/main_harmonic
-#         angle.append(a)
-#         #angle_err.append(1000 * )
-#
-#     limcurr = [min(current),max(current)]
-#     maxy = [1.1*max(1e3*parameters.roll_rotation_spec, max(angle)), 1.1*min(-1e3*parameters.roll_rotation_spec, min(angle))]
-#
-#     _plt.clf()
-#     _plt.plot(current, angle, '-o', color='darkgreen')
-#     _plt.plot(limcurr,[1e3*parameters.roll_rotation_spec]*2, '--', color='black', label='Spec')
-#     _plt.plot(limcurr,[-1e3*parameters.roll_rotation_spec]*2, '--', color='black')
-#     _plt.ylim(maxy)
-#     _plt.xlabel('current / A')
-#     _plt.ylabel('Angle / mrad')
-#     _plt.grid('on')
-#     _plt.title('Residual skew of main multipolar field for ' + magnet_name)
-#     _plt.legend(loc=0)
-#     if show_fig: _plt.show()
-#     if save_fig: _plt.savefig('skew_rotation_vs_current.png')
-#
-# def plot_dislocation_vs_current(analysis_set, show_fig=False, save_fig=True):
-#     current, posx, posy = [], [], []
-#     posx_err, posy_err = [], []
-#     for analysis in analysis_set:
-#         parameters = analysis.parameters
-#         data = analysis.measurement if hasattr(analysis,'measurement') else analysis
-#         magnet_name = data.magnet_label
-#         main_harmonic = analysis.parameters.main_multipole_harmonic
-#         idx = analysis.parameters.harmonics.index(main_harmonic)
-#         current.append(data.current1_avg)
-#         y = - 1e6*analysis.polynom_a_avg[0] / analysis.polynom_b_avg[1]
-#         x = - 1e6*analysis.polynom_b_avg[0] / analysis.polynom_b_avg[1]
-#         a,b   = 1e6*analysis.polynom_a_avg[0], 1e6*analysis.polynom_b_avg[1]
-#         da,db = 1e6*analysis.polynom_a_std[0], 1e6*analysis.polynom_b_std[1]
-#         y_err = ((a/b)**2*((da/a)**2+(db/b)**2))**0.5
-#         a,b   = 1e6*analysis.polynom_b_avg[0], 1e6*analysis.polynom_b_avg[1]
-#         da,db = 1e6*analysis.polynom_b_std[0], 1e6*analysis.polynom_b_std[1]
-#         x_err = ((a/b)**2*((da/a)**2+(db/b)**2))**0.5
-#         posx.append(x); posy.append(y)
-#         posx_err.append(x_err); posy_err.append(y_err);
-#
-#     limcurr = [min(current),max(current)]
-#     _plt.clf()
-#     _plt.plot(current, posx, '-o', color='blue', label='Horizontal')
-#     _plt.errorbar(x=current, y=posx, ecolor='black', fmt='none', yerr=posx_err)
-#     _plt.plot(current, posy, '-s', color='red', label='Vertical')
-#     _plt.errorbar(x=current, y=posy, ecolor='black', fmt='none', yerr=posy_err)
-#     _plt.plot(limcurr,[1e6*parameters.x_misalignment_spec]*2, '--', color='blue', label='Horizontal spec')
-#     _plt.plot(limcurr,[-1e6*parameters.x_misalignment_spec]*2, '--', color='blue')
-#     _plt.plot(limcurr,[1e6*parameters.y_misalignment_spec]*2, '--', color='red', label='Vertical spec')
-#     _plt.plot(limcurr,[-1e6*parameters.y_misalignment_spec]*2, '--', color='red')
-#     _plt.legend(loc=0)
-#     _plt.xlabel('current / A')
-#     _plt.ylabel('Pos / um')
-#     _plt.grid('on')
-#     _plt.title('Residual dipolar fields for ' + magnet_name)
-#     if show_fig: _plt.show()
-#     if save_fig: _plt.savefig('dislocation_vs_current.png')
-#
-# def plot_multipole_vs_current(analysis_set, title=None, harmonic=None, relative=False, show_fig=False, save_fig=True):
-#     polynom_a_avg, polynom_b_avg = [], []
-#     polynom_a_std, polynom_b_std = [], []
-#     current = []
-#     for analysis in analysis_set:
-#         parameters = analysis.parameters
-#         if not harmonic:  harmonic=parameters.main_multipole_harmonic
-#         data = analysis.measurement if hasattr(analysis, 'measurement') else analysis
-#         current.append(data.current1_avg)
-#         idx = analysis.parameters.harmonics.index(harmonic)
-#         if relative:
-#             polynom_a_avg.append(analysis.polynom_a_relative_avg[idx])
-#             polynom_a_std.append(analysis.polynom_a_relative_std[idx])
-#             polynom_b_avg.append(analysis.polynom_b_relative_avg[idx])
-#             polynom_b_std.append(analysis.polynom_b_relative_std[idx])
-#         else:
-#             polynom_a_avg.append(analysis.polynom_a_avg[idx])
-#             polynom_a_std.append(analysis.polynom_a_std[idx])
-#             polynom_b_avg.append(analysis.polynom_b_avg[idx])
-#             polynom_b_std.append(analysis.polynom_b_std[idx])
-#     if relative:
-#         if not title:
-#             normal_title = data.magnet_label + '_relative_normal-{0:02d}-pole-field_vs_current'.format(2*harmonic)
-#             skew_title = data.magnet_label + '_relative_skew-{0:02d}-pole-field_vs_current'.format(2*harmonic)
-#         else:
-#             normal_title = title+'_normal'; skew_title = title+'_skew'
-#         normal_ylabel = get_multipole_name(harmonic,mult_type='normal',ref_radius=analysis.parameters.ref_radius)
-#         skew_ylabel = get_multipole_name(harmonic,mult_type='skew',ref_radius=analysis.parameters.ref_radius)
-#     else:
-#         if not title:
-#             normal_title = data.magnet_label + '_normal-{0:02d}-pole-field_vs_current'.format(2*harmonic)
-#             skew_title = data.magnet_label + '_skew-{0:02d}-pole-field_vs_current'.format(2*harmonic)
-#         else:
-#             normal_title = title+'_normal'; skew_title = title+'_skew'
-#         normal_ylabel = get_multipole_name(harmonic,mult_type='normal',ref_radius=None)
-#         skew_ylabel = get_multipole_name(harmonic,mult_type='skew',ref_radius=None)
-#
-#     _plt.clf()
-#     _plt.errorbar(current, polynom_b_avg, yerr=polynom_b_std)
-#     _plt.xlabel('current / A')
-#     _plt.ylabel(normal_ylabel)
-#     _plt.grid('on')
-#     _plt.title(normal_title)
-#     try:
-#         spec, _ = parameters.multipoles_spec[harmonic]
-#         if spec[0]:
-#             spec_sys = spec[0]
-#             _plt.plot([min(current),max(current)], [spec_sys]*2, '-', color='black', label='spec_sys')
-#             if spec[1]:
-#                 spec_rms = [spec_sys-spec[1],spec_sys+spec[1]]
-#                 _plt.plot([min(current),max(current)], [spec_rms[0]]*2, '--', color='black', label='spec_sys +/- spec_rms')
-#                 _plt.plot([min(current),max(current)], [spec_rms[1]]*2, '--', color='black')
-#             _plt.legend()
-#         else:
-#             if spec[1]:
-#                 spec_rms = [-spec_rms,+spec_rms]
-#                 _plt.plot([min(current),max(current)], [spec_rms[0]]*2, '--', color='black', label='+/- spec_rms')
-#                 _plt.plot([min(current),max(current)], [spec_rms[1]]*2, '--', color='black')
-#                 _plt.legend()
-#     except KeyError:
-#         pass
-#
-#     #_plt.gca().get_yaxis().set_major_formatter(_ticker.FormatStrFormatter('%+0.1E'))
-#     if show_fig: _plt.show()
-#     if save_fig: _plt.savefig(normal_title+'.png')
-#
-#     _plt.clf()
-#     _plt.errorbar(current, polynom_a_avg, yerr=polynom_a_std)
-#     _plt.xlabel('current / A')
-#     _plt.ylabel(skew_ylabel)
-#     _plt.grid('on')
-#     _plt.title(skew_title)
-#     try:
-#         _, spec = parameters.multipoles_spec[harmonic]
-#         if spec[0]:
-#             spec_sys = spec[0]
-#             _plt.plot([min(current),max(current)], [spec_sys]*2, '-', color='black', label='spec_sys')
-#             if spec[1]:
-#                 spec_rms = [spec_sys-spec[1],spec_sys+spec[1]]
-#                 _plt.plot([min(current),max(current)], [spec_rms[0]]*2, '--', color='black', label='spec_sys +/- spec_rms')
-#                 _plt.plot([min(current),max(current)], [spec_rms[1]]*2, '--', color='black')
-#             _plt.legend()
-#         else:
-#             if spec[1]:
-#                 spec_rms = [-spec_rms,+spec_rms]
-#                 _plt.plot([min(current),max(current)], [spec_rms[0]]*2, '--', color='black', label='+/- spec_rms')
-#                 _plt.plot([min(current),max(current)], [spec_rms[1]]*2, '--', color='black')
-#                 _plt.legend()
-#     except KeyError:
-#         pass
-#     if show_fig: _plt.show()
-#     if save_fig: _plt.savefig(skew_title+'.png')
-#
-# def merge_measurements_with_same_current(analysis_set, magnet_label=None):
-#
-#     harmonics = analysis_set[0].parameters.harmonics
-#
-#     # partition data into a set of measurements with distinct currents
-#     dset = []
-#     for a in analysis_set:
-#         t_avg, t_std = a.measurement.current1_avg, a.measurement.current1_std
-#         matching_element = None
-#         for element in dset:
-#             avg, std = _numpy.mean(element[0]), max(element[1])
-#             if abs(t_avg - avg) < 2*max(t_std,std):
-#                 matching_element = element; break
-#         if matching_element:
-#             matching_element[0].append(t_avg)
-#             matching_element[1].append(t_std)
-#             matching_element[2].append(a)
-#         else:
-#             dset.append([[t_avg],[t_std],[a]])
-#
-#     new_analysis_set = []
-#     for current_avg_set, current_std_set, analysis_set in dset:
-#         analysis = AnalysisFromSet()
-#         if magnet_label: analysis.magnet_label = magnet_label
-#         analysis.current1_avg = _numpy.mean(current_avg_set)
-#         analysis.current1_std = max(_numpy.std(current_avg_set), max(current_std_set))
-#         polynom_a = _numpy.zeros((len(analysis_set), len(harmonics)))
-#         polynom_b = _numpy.zeros((len(analysis_set), len(harmonics)))
-#         polynom_a_relative = _numpy.zeros((len(analysis_set), len(harmonics)))
-#         polynom_b_relative = _numpy.zeros((len(analysis_set), len(harmonics)))
-#         for i in range(len(analysis_set)):
-#             analysis.parameters = analysis_set[i].parameters
-#             polynom_a[i,:] = analysis_set[i].polynom_a_avg
-#             polynom_b[i,:] = analysis_set[i].polynom_b_avg
-#             polynom_a_relative[i,:] = analysis_set[i].polynom_a_relative_avg
-#             polynom_b_relative[i,:] = analysis_set[i].polynom_b_relative_avg
-#         analysis.polynom_a_avg = _numpy.mean(polynom_a, axis=0)
-#         analysis.polynom_a_std = _numpy.std(polynom_a, axis=0)
-#         analysis.polynom_b_avg = _numpy.mean(polynom_b, axis=0)
-#         analysis.polynom_b_std = _numpy.std(polynom_b, axis=0)
-#         #sel = (max(analysis_set[i].polynom_a_std, axis=0) > analysis.polynom_a_std)
-#         #analysis.polynom_a_std(sel) =
-#         analysis.polynom_a_relative_avg = _numpy.mean(polynom_a_relative, axis=0)
-#         analysis.polynom_a_relative_std = _numpy.std(polynom_a_relative, axis=0)
-#         analysis.polynom_b_relative_avg = _numpy.mean(polynom_b_relative, axis=0)
-#         analysis.polynom_b_relative_std = _numpy.std(polynom_b_relative, axis=0)
-#         for i in range(len(analysis_set)):
-#             # checks if intrinsic errors are larger than dispersion amongst data
-#             sel = analysis_set[i].polynom_a_std > analysis.polynom_a_std
-#             analysis.polynom_a_std[sel] = analysis_set[i].polynom_a_std[sel]
-#             sel = analysis_set[i].polynom_a_relative_std > analysis.polynom_a_relative_std
-#             analysis.polynom_a_relative_std[sel] = analysis_set[i].polynom_a_relative_std[sel]
-#             sel = analysis_set[i].polynom_b_std > analysis.polynom_b_std
-#             analysis.polynom_b_std[sel] = analysis_set[i].polynom_b_std[sel]
-#             sel = analysis_set[i].polynom_b_relative_std > analysis.polynom_b_relative_std
-#             analysis.polynom_b_relative_std[sel] = analysis_set[i].polynom_b_relative_std[sel]
-#
-#         new_analysis_set.append(analysis)
-#     return new_analysis_set
-#
-# def run_analysis(local_parameters, analysis_type='excitation'):
-#
-#     parameters = local_parameters.parameters
-#
-#     # loads default parameters for analysis
-#     print('Analysis parameters: {0:s}'.format(parameters.label))
-#
-#     # gets list of files (excluding I=0A data)
-#     top_folder = _os.path.join(_os.getcwd(), local_parameters.data_folder)
-#     all_files = _utils.files_get_matches(folder=top_folder, recursive=True, strs_in=['_BOB_','.dat'], strs_out='+0000A')
-#     print('Analysis of files in {1:s}...'.format(len(all_files), top_folder))
-#
-#     # analyzes all data
-#     analysis_set = []
-#     for fname in all_files:
-#         print('  ' + _os.path.basename(fname) + '...')
-#         m = Measurement(fname)
-#         if local_parameters.only_ramp_up and analysis_set and m.current1_avg < analysis_set[-1].measurement.current1_avg: break
-#         a = Analysis(m, parameters)
-#         txt_fname = _os.path.basename(fname).replace('.dat','_analysis.txt')
-#         with open(txt_fname,'w') as tf:
-#             tf.write(a.__str__())
-#         analysis_set.append(a)
-#         if local_parameters.plot_each_data_file: plot_harmonic_analysis(a,
-#             ylim=local_parameters.mult_ylim,
-#             show_fig=local_parameters.show_fig,
-#             save_fig=local_parameters.save_fig)
-#
-#     magnet_label = analysis_set[0].measurement.magnet_label
-#     harmonics = analysis_set[0].parameters.harmonics
-#
-#     if analysis_type == 'excitation':
-#         # merge different measurements at the same current
-#         print('Merge measurement data with the same current')
-#         analysis_set = merge_measurements_with_same_current(analysis_set, magnet_label=magnet_label)
-#
-#     # plots excitation curve
-#     print('Plot of excitation curve')
-#     plot_multipole_vs_current(analysis_set,
-#         title=magnet_label + '_excitation_curve',
-#         harmonic=None,
-#         relative=False,
-#         show_fig=local_parameters.show_fig,
-#         save_fig=local_parameters.save_fig)
-#
-#     print('Plots magnet off-center dislocation')
-#     plot_dislocation_vs_current(analysis_set,
-#                                 show_fig=local_parameters.show_fig,
-#                                 save_fig=local_parameters.save_fig)
-#
-#     print('Plots magnet equivalent roll rotation')
-#     plot_skew_rotation_vs_current(analysis_set,
-#                                   show_fig=local_parameters.show_fig,
-#                                   save_fig=local_parameters.save_fig)
-#
-#     # plots all relative multipoles as function of current
-#     print('Plot of current-dependent relative multipoles')
-#     for h in harmonics:
-#         plot_multipole_vs_current(analysis_set,
-#             title=None,
-#             harmonic=h,
-#             relative=True,
-#             show_fig=local_parameters.show_fig,
-#             save_fig=local_parameters.save_fig)
-#
-#     if local_parameters.move_files:
-#         print('Moving analysis file to analysis folder')
-#         # moves file to analysis folder
-#         plot_files = _utils.files_get_matches(folder=_os.getcwd(), recursive=False, strs_in='.png', strs_out=None)
-#         txt_files = _utils.files_get_matches(folder=_os.getcwd(), recursive=False, strs_in='analysis.txt', strs_out=None)
-#         analysis_folder = _os.path.join(top_folder, 'analysis')
-#         if not _os.path.exists(analysis_folder): _os.makedirs(analysis_folder)
-#         for plot_file in plot_files + txt_files:
-#             new_path = _os.path.join(top_folder, 'analysis',_os.path.basename(plot_file))
-#             _os.rename(plot_file, new_path)
-#
-# def run_excitation_curve_analysis(local_parameters):
-#
-#     local_parameters.data_folder = local_parameters.excitation_data_folder
-#     run_analysis(local_parameters, analysis_type='excitation')
-#
-# def run_histeresis_curve_analysis(local_parameters):
-#
-#     local_parameters.data_folder = local_parameters.histeresis_data_folder
-#     run_analysis(local_parameters, analysis_type='histeresis')
+    multipoles_avg, multipoles_std, harmonics, main_multipole_harmonic = get_average_excitation_curve(meas_data_set, parms, currents)
+
+    if not ax:
+        f = _plt.figure()
+        ax = _plt.axes()
+    f = ax.get_figure()
+
+    idx = harmonics.index(main_multipole_harmonic)
+    ax.plot(currents, multipoles_avg[:,idx] - multipoles_std[:,idx], '--', color='blue')
+    ax.plot(currents, multipoles_avg[:,idx], color = 'blue')
+    ax.plot(currents, multipoles_avg[:,idx] + multipoles_std[:,idx], '--', color = 'blue')
+
+    ax.set_xlabel('Current [A]')
+    ax.set_ylabel(labels[main_multipole_harmonic])
+    ax.grid('on')
+    ax.set_title('Excitation Curve')
+    if save: f.savefig('excitation_curve.png')
+    if show: f.show()
+
+def calc_excitation_curve_nonlinearity(meas_data_set, parms, currents, show=True, save=False, ax=None):
+
+    if not ax:
+        f = _plt.figure()
+        ax = _plt.axes()
+    f = ax.get_figure()
+    currents = _numpy.array(currents)
+
+    multipoles_avg, multipoles_std, harmonics, main_multipole_harmonic = get_average_excitation_curve(meas_data_set, parms, currents)
+    idx = harmonics.index(main_multipole_harmonic)
+    pfit = _numpy.poly1d(_numpy.polyfit(currents, multipoles_avg[:,idx], idx));
+    fit_error = _numpy.array([(pfit(currents[i]) - multipoles_avg[i,idx])/multipoles_avg[i,idx] for i in range(len(currents))])
+
+    c_neg, f_neg = currents[fit_error < 0], fit_error[fit_error < 0]
+    c_pos, f_pos = currents[fit_error > 0], fit_error[fit_error > 0]
+
+    ax.set_yscale('log')
+    ax.plot(c_pos, 100*f_pos, 'bo');
+    ax.plot(c_neg, 100*abs(f_neg), 'ro');
+
+    ax.set_ylim([1e-2,100])
+    ax.set_xlabel('Current [A]')
+    ax.set_ylabel('Nonlinearity [%]')
+    ax.grid('on')
+    ax.set_title('Nonlinearity of Excitation Curve')
+    if save: f.savefig('excitation_curve_non_linearity.png')
+    if show: f.show()
+
+    return fit_error, currents, multipoles_avg
+
+def plot_histeresis(meas_data_set, parms, currents, show=True, save=False, ax=None):
+
+    labels = {1:'Integrated dipole [T.m]',
+              2:'Integrated quadrupole [T]',
+              3:'Integrated sextupole [T/m]'}
+
+    if not ax:
+        f = _plt.figure()
+        ax = _plt.axes()
+    f = ax.get_figure()
+
+    currents = _numpy.array(currents)
+
+    multipoles_avg, multipoles_std, harmonics, main_multipole_harmonic = get_average_excitation_curve(meas_data_set, parms, currents)
+    idx = harmonics.index(main_multipole_harmonic)
+    pfit = _numpy.poly1d(_numpy.polyfit(currents, multipoles_avg[:,idx], idx));
+    for current_data_set in meas_data_set:
+        c,m = [],[]
+        for data in current_data_set:
+            current = data.measurement.current1_avg
+            main_multipole = data.polynom_b_avg[idx]
+            c.append(current)
+            m.append(main_multipole - pfit(current))
+            ax.plot(c,m)
+    ax.set_xlabel('Current [A]')
+    ax.set_ylabel(labels[main_multipole_harmonic])
+    ax.grid('on')
+    ax.set_title('Histeresis of Main Multipole')
+    if save: f.savefig('histeresis.png')
+    if show: f.show()
