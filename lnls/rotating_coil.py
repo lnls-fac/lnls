@@ -51,9 +51,9 @@ class BSAnalysisParameters(AnalysisParameters):
             6: ((0,0),       (+4.0e-4,1e-4)),
             7: ((0,0),       (+4.0e-4,1e-4)),
             8: ((0,0),       (+4.0e-4,1e-4)),
-            9: ((-2.5e-2,0), (+4.0e-4,1e-4)),
+            9: ((-2.7e-2,0), (+4.0e-4,1e-4)),
             10:((0,0),       (+4.0e-4,1e-4)),
-            15:((-1.5e-2,0), (0,0)),
+            15:((-1.4e-2,0), (0,0)),
         }
 
 class BQAnalysisParameters(AnalysisParameters):
