@@ -31,7 +31,7 @@ class AnalysisParameters():
         r += '\n{0:<30s} {1:s}'.format('harmonics', str(self.harmonics))
         return r
 
-class BSAnalysisParameters(AnalysisParameters):
+class BO_S10_AnalysisParameters(AnalysisParameters):
 
     def __init__(self):
         self.label = 'Parameters for booster sextupoles'
@@ -42,7 +42,7 @@ class BSAnalysisParameters(AnalysisParameters):
         self.x_misalignment_spec = 160     #[um]
         self.y_misalignment_spec = 160     #[um]
         self.roll_rotation_spec  = 0.8     #[mrad]
-        self.max_integ_mult_spec = -21.05  #[T/m]
+        self.max_integ_mult_spec = -21.014537692633  #[T/m]
         self.excitation_rms_spec = 0.3     #[%]
         self.multipoles_spec = {
             # (normal_sys, skew_sys) (normal_std, skew_std)
@@ -56,7 +56,7 @@ class BSAnalysisParameters(AnalysisParameters):
             15:((-1.4e-2,0), (0,0)),
         }
 
-class BQAnalysisParameters(AnalysisParameters):
+class BO_QF_AnalysisParameters(AnalysisParameters):
 
     def __init__(self):
         self.label = 'Parameters for booster quadrupoles'
@@ -130,6 +130,29 @@ class SI_Q20_AnalysisParameters(AnalysisParameters):
             18:((+5.9e-5,0),         (0,0)),
         }
 
+class SI_S15_AnalysisParameters(AnalysisParameters):
+
+    def __init__(self):
+        self.label = 'Parameters for Storage Ring Sextupoles'
+        self.main_multipole_harmonic = 3  # [1: dipole, 2:quadrupole, ...]
+        self.main_multipole_is_skew  = False
+        self.harmonics = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] # [1: dipole, 2:quadrupole, ...]
+        self.ref_radius = 0.012 # [m]
+        self.x_misalignment_spec = 40     #[um]
+        self.y_misalignment_spec = 40     #[um]
+        self.roll_rotation_spec  = 0.3    #[mrad]
+        self.max_integ_mult_spec = -360.24921758801  #[T/m]
+        self.excitation_rms_spec = 0.3     #[%]
+        self.multipoles_spec = {
+            # (normal_sys, skew_sys) (normal_std, skew_std)
+            4: ((0,0),       (+1.5e-4,0.5e-4)),
+            5: ((-7.0e-5,0), (+1.5e-4,0.5e-4)),
+            6: ((0,0),       (+1.5e-4,0.5e-4)),
+            7: ((-1.4e-4,0), (+1.5e-4,0.5e-4)),
+            9: ((-2.4e-3,0), (0,0)),
+            15:((+1.4e-3,0), (0,0)),
+        }
+
 class RadialRotatingCoil:
     def __init__(self, lines):
         for line in lines:
@@ -137,38 +160,38 @@ class RadialRotatingCoil:
             if not words: continue
             first = words[0]
             if first[0] == '#':
-                if len(words)>3 and words[3] == 'Armazenados(V.s)':
+                if len(words)>3 and words[3] in ('Armazenados(V.s)','Stored(V.s)'):
                     self.data_conversion_factor = float(words[4].replace('[','').replace(']',''))
                 continue
-            elif first == 'nome_bobina_girante':
+            elif first in ('nome_bobina_girante','rotating_coil_name'):
                 self.label = ' '.join(words[1:])
-            elif first == 'tipo_bobina_girante':
+            elif first in ('tipo_bobina_girante','rotating_coil_type'):
                 self.type = ' '.join(words[1:])
-            elif first == 'velocidade(rps)':
+            elif first in ('velocidade(rps)','velocity(rps)'):
                 self.rotation_velocity = float(words[1])
-            elif first == 'aceleracao(rps^2)':
+            elif first in ('aceleracao(rps^2)','acceleration(rps^2)'):
                 self.rotation_acceleration = float(words[1])
-            elif first == 'sentido_de_rotacao':
+            elif first in ('sentido_de_rotacao','rotation'):
                 self.rotation_wise = ' '.join(words[1:])
-            elif first == 'ganho_integrador':
+            elif first in ('ganho_integrador','integrator_gain'):
                 self.integrator_gain = float(words[1])
-            elif first == 'n_espiras_bobina_principal':
+            elif first in ('n_espiras_bobina_principal','n_turns_main_coil'):
                 self.nr_coil_turns = int(words[1])
-            elif first == 'raio_interno_bobina_princip(m)':
+            elif first in ('raio_interno_bobina_princip(m)','main_coil_internal_radius(m)'):
                 self.inner_radius = float(words[1])
-            elif first == 'raio_externo_bobina_princip(m)':
+            elif first in ('raio_externo_bobina_princip(m)','main_coil_external_radius(m)'):
                 self.outer_radius = float(words[1])
-            elif first == 'tipo_medicao':
+            elif first in ('tipo_medicao','measurement_type'):
                 self.measurement_type = ' '.join(words[1:])
-            elif first == 'pulso_start_coleta':
+            elif first in ('pulso_start_coleta','pulse_start_collect'):
                 self.init_tick = int(words[1])
-            elif first == 'nr_pontos_integracao':
+            elif first in ('nr_pontos_integracao','nr_integration_points'):
                 self.nr_points = int(words[1])
-            elif first == 'n_espiras_bobina_bucked':
+            elif first in ('n_espiras_bobina_bucked','n_turns_bucked_coil'):
                 self.nr_bucked_coil_turns_bucked = int(words[1])
-            elif first == 'raio_interno_bobina_bucked(m)':
+            elif first in ('raio_interno_bobina_bucked(m)','bucked_coil_internal_radius(m)'):
                 self.bucked_inner_radius = float(words[1])
-            elif first == 'raio_externo_bobina_bucked(m)':
+            elif first in ('raio_externo_bobina_bucked(m)','bucked_coil_external_radius(m)'):
                 self.bucked_outer_radius = float(words[1])
             else:
                 pass
@@ -187,6 +210,7 @@ class RadialRotatingCoil:
         r += '\n{0:<30s} {1:s}'.format('measurement_type', self.measurement_type)
         r += '\n{0:<30s} {1:d}'.format('init_tick', self.init_tick)
         r += '\n{0:<30s} {1:d}'.format('nr_points_integrator', self.nr_points)
+        r += '\n'
         return r
 
 class Measurement:
@@ -199,29 +223,29 @@ class Measurement:
         for i in range(len(lines)):
             line = lines[i]
             if not line: continue
-            if 'Volta_1' in line:
+            if 'Volta_1' in line or 'Turn_1' in line:
                 raw_data_txt = lines[i+1:]
                 break
             if line[0] == '#': continue
             words = line.split()
             first = words[0]
-            if first == 'nr_voltas':
+            if first in ('nr_voltas', 'nr_turns'):
                 self.nr_turns = int(words[1])
-            elif first == 'nr_pontos_integracao':
+            elif first in ('nr_pontos_integracao', 'nr_integration_points'):
                 self.nr_points = int(words[1])
-            elif first == 'corrente_alim_principal_avg(A)':
-                self.current1_avg = float(words[1])
-            elif first == 'corrente_alim_principal_std(A)':
-                self.current1_std = float(words[1])
-            elif first == 'corrente_alim_secundaria_avg(A)':
-                self.current2_avg = float(words[1])
-            elif first == 'corrente_alim_secundaria_std(A)':
-                self.current2_std = float(words[1])
-            elif first == 'data':
+            elif first in ('corrente_alim_principal_avg(A)','main_coil_current_avg(A)'):
+                self.main_coil_current_avg = float(words[1])
+            elif first in ('corrente_alim_principal_std(A)', 'main_coil_current_std(A)'):
+                self.main_coil_current_std = float(words[1])
+            #elif first == 'corrente_alim_secundaria_avg(A)':
+            #    self.current2_avg = float(words[1])
+            #elif first == 'corrente_alim_secundaria_std(A)':
+            #    self.current2_std = float(words[1])
+            elif first in ('data','date'):
                 self.timestamp += words[1] + ' '
-            elif first == 'hora':
+            elif first in ('hora','hour'):
                 self.timestamp += words[1] + ' '
-            elif first == 'temperatura_ima(C)':
+            elif first in ('temperatura_ima(C)', 'temperature(ºC)'):
                 self.temperature = words[1]
 
         self.timestamp = self.timestamp.strip()
@@ -244,6 +268,13 @@ class Measurement:
 
         self.flux = raw_data_corrected
 
+        fname = _os.path.basename(filename)
+        if fname[0].isdigit():
+            self.magnet_label = _os.path.basename(self.filename).split('_')[2]
+        else:
+            self.magnet_label = _os.path.basename(self.filename).split('_')[0]
+
+
         self.magnet_label = _os.path.basename(self.filename).split('_')[0]
         #self.magnet_label = _os.path.basename(self.filename)[:5]
 
@@ -252,8 +283,8 @@ class Measurement:
         r += '\n\n--- measurement ---\n\n'
         r += '{0:<30s} {1:s}'.format('data_filename', _os.path.basename(self.filename))
         r += '\n{0:<30s} {1:s}'.format('time_stamp', self.timestamp)
-        r += '\n{0:<30s} {1:+.3f}'.format('main_current_avg[A]', self.current1_avg)
-        r += '\n{0:<30s} {1:.3f}'.format('main_current_std[A]', self.current1_std)
+        r += '\n{0:<30s} {1:+.3f}'.format('main_coil_current_avg[A]', self.main_coil_current_avg)
+        r += '\n{0:<30s} {1:.3f}'.format('main_coil_current_std[A]', self.main_coil_current_std)
         r += '\n{0:<30s} {1:s}'.format('temperature', self.temperature)
         r += '\n{0:<30s} {1:d}'.format('nr_turns', self.nr_turns)
         r += '\n\n--- rotating coil ---\n\n'
@@ -268,7 +299,7 @@ class Analysis:
         self._run_analysis()
 
     def _run_analysis(self):
-        if self.measurement.rotating_coil.type == 'Bobina Radial':
+        if self.measurement.rotating_coil.type in ('Bobina Radial','Radial Coil'):
             self._calc_multipoles_for_radial_rotcoil()
             self._calc_relative_multipoles()
             self._calc_statistics()
@@ -383,7 +414,7 @@ def run_analysis(parms, fnames, print_flag=True):
         m = Measurement(fnames[i])
         a = Analysis(m,parms)
         *first, fname = _os.path.split(fnames[i])
-        if print_flag: print('{3:02d} - {0}, current: {1:+9.4f} +/- {2:.4f}'.format(fname, a.measurement.current1_avg, a.measurement.current1_std, i))
+        if print_flag: print('{3:02d} - {0}, current: {1:+9.4f} +/- {2:.4f}'.format(fname, a.measurement.main_coil_current_avg, a.measurement.main_coil_current_std, i))
         analysis.append(a)
     return analysis
 
@@ -392,7 +423,7 @@ def select_ramp_up(current_data_set, current_threshold=0.0):
     c = -float('inf')
     new_data = []
     for data in current_data_set:
-        current = data.measurement.current1_avg
+        current = data.measurement.main_coil_current_avg
         if abs(current) > current_threshold:
             if current < c: break
             c = current
@@ -405,7 +436,7 @@ def get_remanent_field(magnet_data_set, current_threshold=0.0):
     for d1 in magnet_data_set:
         for d2 in d1:
             for d3 in d2:
-                current = d3.measurement.current1_avg
+                current = d3.measurement.main_coil_current_avg
                 if abs(current) < current_threshold:
                     currents.append(current)
                     polya.append(d3.polynom_a_avg)
@@ -420,7 +451,7 @@ def get_maximum_main_multipole(current_data_set, parms, current_threshold=0.0):
     '''returns maximum value of main multipole'''
     selection = select_ramp_up(current_data_set, current_threshold=current_threshold)
     idx = parms.harmonics.index(parms.main_multipole_harmonic)
-    max_current = selection[-1].measurement.current1_avg
+    max_current = selection[-1].measurement.main_coil_current_avg
     if parms.main_multipole_is_skew:
         return selection[-1].polynom_a_avg[idx], max_current
     else:
@@ -431,7 +462,7 @@ def get_multipole_from_data_set(current_data_set, parms, h, mtype='normal', rela
     idx = parms.harmonics.index(h)
     c, multipole = [],[]
     for d in current_data_set:
-        c.append(d.measurement.current1_avg)
+        c.append(d.measurement.main_coil_current_avg)
         if mtype == 'normal':
             if relative:
                 multipole.append(d.polynom_b_relative_avg[idx])
@@ -451,8 +482,12 @@ def find_current(meas_data_set, parms, multi_norm, energy, mtype='normal', curre
     for d1 in meas_data_set:
         d2 = select_ramp_up(d1, current_threshold)
         c,s = get_multipole_from_data_set(d2, parms, parms.main_multipole_harmonic, mtype='normal', relative=False)
-        tc = _numpy.interp(multi, s, c, left=float('nan'), right=float('nan'))
+        if _numpy.all(_numpy.diff(s) > 0):
+            tc = _numpy.interp(multi, s, c, left=float('nan'), right=float('nan'))
+        else:
+            tc = _numpy.interp(-multi, -1*_numpy.array(s), c, left=float('nan'), right=float('nan'))
         current.append(tc)
+        #print(c,s)
     return _numpy.mean(current), _numpy.std(current)
 
 def plot_relative_multipoles(magnet_data_set, parms, h, mtype='normal', current_threshold=0.0, currents = None, label = None, show=True, save=False, xlim=None, ylim=None, ax=None):
@@ -536,7 +571,7 @@ def plot_magnetic_center(magnet_data_set, parms, mtype='normal', currents=None, 
             d3 = select_ramp_up(d2, 0.5)
             cu,mu = [],[]
             for d4 in d3:
-                cu.append(d4.measurement.current1_avg)
+                cu.append(d4.measurement.main_coil_current_avg)
                 if parms.main_multipole_harmonic == 3:
                     D = d4.polynom_b_avg[0] + d4.polynom_a_avg[0] * 1j
                     Q = d4.polynom_b_avg[1] + d4.polynom_a_avg[1] * 1j
@@ -608,7 +643,7 @@ def plot_rotation_angle(magnet_data_set, parms, currents = None, show=True, save
             d3 = select_ramp_up(d2, 0.5)
             cu,mu = [],[]
             for d4 in d3:
-                cu.append(d4.measurement.current1_avg)
+                cu.append(d4.measurement.main_coil_current_avg)
                 angle = _math.atan(d4.polynom_a_avg[idx]/d4.polynom_b_avg[idx])/(parms.main_multipole_harmonic-1)
                 mu.append(1e3*angle)
             if first:
@@ -646,7 +681,7 @@ def print_multipoles_single_magnet(meas_data_set, parms, current, current_thresh
             d = select_ramp_up(d2, current_threshold)
             curr, tpolya, tpolyb = [], [], []
             for d3 in d: # over different excitation currents
-                curr.append(d3.measurement.current1_avg)
+                curr.append(d3.measurement.main_coil_current_avg)
                 tpolya.append(d3.polynom_a_relative_avg[i])
                 tpolyb.append(d3.polynom_b_relative_avg[i])
             polya.append(_numpy.interp(current, curr, tpolya))
@@ -678,7 +713,7 @@ def get_excitation_curve(current_data_set, parms):
     data = select_ramp_up(current_data_set, current_threshold=0.0)
     currents, exctable = [], _numpy.zeros((len(data),len(harmonics)))
     for i in range(len(data)):
-        currents.append(data[i].measurement.current1_avg)
+        currents.append(data[i].measurement.main_coil_current_avg)
         exctable[i,:] = data[i].polynom_b_avg
     exccurve = exctable[:,main_harmonic_idx]
     return exctable, exccurve, currents, harmonics, parms.main_multipole_harmonic
@@ -773,7 +808,7 @@ def plot_hysteresis(meas_data_set, parms, excitation_curve, legends=None, show=T
         c,m = [],[]
         for data in current_data_set:
             main_multipole = data.polynom_b_avg[idx]
-            current = data.measurement.current1_avg
+            current = data.measurement.main_coil_current_avg
             multipole = main_multipole - pfit(current)
             c.append(current)
             m.append(multipole)
@@ -803,7 +838,7 @@ def plot_trim_coil_excitation_curves(meas_data_set, parms, excitation_curve, leg
 
     for data in meas_data_set:
         x,y = [],[]
-        main_current = data[0].measurement.current1_avg
+        main_current = data[0].measurement.main_coil_current_avg
         for i in range(len(data)):
             x.append(data[i].measurement.current2_avg)
             y.append(data[i].polynom_b_avg[idx] - pfit(main_current))

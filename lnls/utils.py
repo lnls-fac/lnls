@@ -26,5 +26,11 @@ def files_get_matches(folder=None, recursive=True, strs_in=None, strs_out=None):
             if all(strs_in_flag) and (not strs_out or all(strs_out_flag)):
                 files.append(path)
 
-    files = sorted(files, key=lambda v:v[-17:])
+    # --- sort list of filenames ---
+    fname = _os.path.basename(files[0])
+    if fname[0].isdigit():
+        files = sorted(files)
+    else:
+        files = sorted(files, key=lambda v:v[-17:])
+
     return files
