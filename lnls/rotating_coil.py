@@ -531,6 +531,7 @@ def plot_relative_multipoles(magnet_data_set, parms, h, mtype='normal', current_
     ax.plot([minc,maxc],[sys-rms,sys-rms], 'k--')
     ax.plot([minc,maxc],[sys,sys], 'k')
     ax.plot([minc,maxc],[sys+rms,sys+rms], 'k--')
+    minm, maxm = min([minm,min([sys-rms,sys+rms])]), max([maxm,max([sys-rms,sys+rms])])
     for c in currents:
         ax.plot([c,c],[minm,maxm], 'k--')
     if xlim: ax.set_xlim(xlim)
