@@ -1,10 +1,13 @@
 import os as _os
 
 
-folder_root = _os.environ.get('FACROOT', '/home/fac_files')
+# !!! THIS MODULE IS DEPRECATED. ITS CONTENT SHOULD GO TO lnls-sirius/dev-packages/siriuspy/envars.py !!!
 
-folder_db = _os.path.join(folder_root, 'siriusdb')
+
+folder_root = _os.environ.get('ROOT_GROUP', '/home/fac_files')
+
 folder_fac_code = _os.path.join(folder_root, 'lnls-fac')
+folder_db = _os.path.join(folder_root, 'lnls-fac', 'siriusdb')
 folder_sirius_code = _os.path.join(folder_root, 'lnls-sirius')
 folder_data = _os.path.join(folder_root, 'data')
 folder_mml  = _os.path.join(folder_fac_code, 'MatlabMiddleLayer', 'Release')
