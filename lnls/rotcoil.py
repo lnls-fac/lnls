@@ -62,7 +62,7 @@ class RotCoilData:
 
     def _read_data(self, conv_mpoles_sign):
         # read all text
-        with open(self.path, 'r', encoding='utf-8') as f:
+        with open(self.path, 'r', encoding='latin1') as f:
             text = f.read()
         lines = text.splitlines()
 
@@ -139,6 +139,7 @@ class RotCoilMeas_Sext:
 class RotCoilMeas:
     """Rotation coil measurement of SI magnets."""
 
+    family_folder = ''
     lnls_ima_path = _envars.folder_lnls_ima
 
     _excdata_obs = (
@@ -246,8 +247,10 @@ class RotCoilMeas:
             # data = self._rotcoildata[data_set]
             currents = self.get_currents(data_set)
             max_c = max(currents)
+            # print(data_set, max_c)
             max_c_i.append(currents.index(max_c))
         umaxci = _np.unique(max_c_i)
+        # print(umaxci)
         if len(umaxci) > 1:
             raise ValueError('Inconsistent current values in data sets')
         return umaxci[0]
@@ -318,6 +321,14 @@ class RotCoilMeas:
             p.append(datum.intmpole_skew_avg[i])
         return p
 
+    def get_intmpole_skew_avg_current(self, data_set, idx):
+        """."""
+        data = self._rotcoildata[data_set][idx]
+        p = []
+        for i in range(len(data.harmonics)):
+            p.append(data.intmpole_skew_avg[i])
+        return p
+
     def get_magnetic_center_x(self, data_set):
         """List with horizontal position of magnetic center."""
         data = self._rotcoildata[data_set]
@@ -330,11 +341,21 @@ class RotCoilMeas:
         y = [d.magnetic_center_y for d in data]
         return y
 
-    def rampup_interpolate(self, data_set, current):
+    def rampup_curr_2_main_mpole(self, data_set, current):
         """Interpolate."""
         c, gl = self.get_rampup(data_set)
         gl_interp = _np.interp(current, c, gl)
         return gl_interp
+
+    def rampup_main_mpole_2_curr(self, data_set, main_mpole):
+        """Interpolate."""
+        c, gl = self.get_rampup(data_set)
+        c, gl = _np.array(c), _np.array(gl)
+        arr1inds = gl.argsort()
+        sorted_c = c[arr1inds]
+        sorted_gl = gl[arr1inds]
+        current_interp = _np.interp(main_mpole, sorted_gl, sorted_c)
+        return current_interp
 
     def save_excdata(self, data_set, harmonics=None):
         """Save data."""
@@ -714,6 +735,7 @@ class RotCoilMeas:
         data_path = \
             self.lnls_ima_path + '/' + mag_type_name + '/' + \
             self.model_version + '/measurement/magnetic/rotcoil/' + \
+            self.family_folder + \
             self.magnet_type_label + '-' + \
             self.serial_number + '/main'
         return data_path
@@ -722,6 +744,9 @@ class RotCoilMeas:
         data_path = self._get_data_path()
         if self.magnet_type_label == 'BQF' and self.serial_number == '053':
             fs = self._specialized_data_sets_BQF_053()
+        elif self.magnet_type_label == 'Q20' and \
+                self.serial_number in ('006', '093', '008', '004'):
+            fs = self._specialized_data_sets_Q20()
         else:
             fs = _os.listdir(data_path)
         files = []
@@ -775,6 +800,10 @@ class RotCoilMeas:
     def _specialized_data_sets_BQF_053(self):
         # M4 and M5 are incomplete
         return ['M1', 'M2', 'M3']
+
+    def _specialized_data_sets_Q20(self):
+        # M1_ferromag is incomplete
+        return ['M1']
 
     def _specialized_sort_Q14_060(self, mdata):
         files = (
@@ -856,7 +885,7 @@ class RotCoilMeas_SIQuadQ14(RotCoilMeas_SI, RotCoilMeas_Quad):
 
     spec_r0 = 12.0  # [mm]
     spec_normal_sys_harms = _np.array([5, 9, 13, 17]) + 1
-    spec_normal_sys_mpoles = _np.array([-3.9e-4, 1.7e-3, -8.0e-4, +8.5e-5])
+    spec_normal_sys_mpoles = _np.array([-3.9e-4, +1.7e-3, -8.0e-4, +8.5e-5])
     spec_normal_rms_harms = _np.array([2, 3, 4, 5]) + 1
     spec_normal_rms_mpoles = _np.array([1.5, 1.5, 1.5, 1.5])*1e-4
     spec_skew_sys_harms = _np.array([])
@@ -881,6 +910,51 @@ class RotCoilMeas_SIQuadQ30(RotCoilMeas_SI, RotCoilMeas_Quad):
     spec_main_intmpole_max_value = 13.62942873208  # [T] (spec in wiki-sirius)
     spec_magnetic_center_x = 40.0  # [um]
     spec_magnetic_center_y = 40.0  # [um]
+    spec_roll = 0.3  # [mrad]
+
+    spec_r0 = 12.0  # [mm]
+    spec_normal_sys_harms = _np.array([5, 9, 13, 17]) + 1
+    spec_normal_sys_mpoles = _np.array([-4.3e-4, +1.8e-3, -8.1e-4, +7.2e-5])
+    spec_normal_rms_harms = _np.array([2, 3, 4, 5]) + 1
+    spec_normal_rms_mpoles = _np.array([1.5, 1.5, 1.5, 1.5])*1e-4
+    spec_skew_sys_harms = _np.array([])
+    spec_skew_sys_mpoles = _np.array([])
+    spec_skew_rms_harms = _np.array([2, 3, 4, 5]) + 1
+    spec_skew_rms_mpoles = _np.array([0.5, 0.5, 0.5, 0.5])*1e-4
+
+
+class RotCoilMeas_SIQuadQ20(RotCoilMeas_SI, RotCoilMeas_Quad):
+    """Rotation coil measurement of SI quadrupole magnets Q20."""
+
+    family_folder = 'family_1/'
+
+    conv_mpoles_sign = +1.0  # meas with default current polarity!
+    magnet_type_label = 'Q20'
+    magnet_type_name = 'si-quadrupole-q20'
+    model_version = 'model-05'
+    magnet_hardedge_length = 0.20  # [m]
+    nominal_KL_values = {
+        'SI-Fam:MA-QFA': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-QFA'],
+        'SI-Fam:MA-Q1': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-Q1'],
+        'SI-Fam:MA-Q2': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-Q2'],
+        'SI-Fam:MA-Q3': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-Q3'],
+        'SI-Fam:MA-Q4': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-Q4'],
+    }
+    spec_main_intmpole_rms_error = 0.05  # [%]
+    spec_main_intmpole_max_value = 9.0862858213864  # [T] (spec in wiki-sirius)
+    spec_magnetic_center_x = 40.0  # [um]
+    spec_magnetic_center_y = 40.0  # [um]
+    spec_roll = 0.3  # [mrad]
+
+    spec_r0 = 12.0  # [mm]
+    spec_normal_sys_harms = _np.array([5, 9, 13, 17]) + 1
+    spec_normal_sys_mpoles = _np.array([-4.1e-4, +1.7e-3, -7.7e-4, +5.9e-5])
+    spec_normal_rms_harms = _np.array([2, 3, 4, 5]) + 1
+    spec_normal_rms_mpoles = _np.array([1.5, 1.5, 1.5, 1.5])*1e-4
+    spec_skew_sys_harms = _np.array([])
+    spec_skew_sys_mpoles = _np.array([])
+    spec_skew_rms_harms = _np.array([2, 3, 4, 5]) + 1
+    spec_skew_rms_mpoles = _np.array([0.5, 0.5, 0.5, 0.5])*1e-4
 
 
 class RotCoilMeas_BOQuadQD(RotCoilMeas_BO, RotCoilMeas_Quad):
@@ -1063,7 +1137,7 @@ class MagnetsAnalysis:
         plt.xlabel('Serial Number Index')
         plt.ylabel('Position [um]')
         plt.legend(('Spec', 'Spec', 'X', 'Y'))
-        plt.title('Magnetic Centers of Magnets')
+        plt.title('Magnetic Centers at Maximum Current')
 
     def magnetic_center_transverse_plot(self, data_set, plt):
         """."""
@@ -1087,7 +1161,33 @@ class MagnetsAnalysis:
             plt.plot([x], [y], 'o', color=[1, 0, 1])
         plt.xlabel('Horizontal Position [um]')
         plt.ylabel('Vertical Position [um]')
-        plt.title('Magnetic Centers of Magnets')
+        plt.title('Magnetic Centers at Maximum Current')
+
+    def rotation_error_plot(self, data_set, plt, curr_idx):
+        """."""
+        rot_error = []
+        for i in range(len(self.serials)):
+            d = self._magnetsdata[self.serials[i]]
+            spec_roll = d.spec_roll
+            n = d.get_intmpole_normal_avg(data_set, d.main_harmonic)
+            s = d.get_intmpole_skew_avg(data_set, d.main_harmonic)
+            r = s[curr_idx]/n[curr_idx]
+            theta = _np.arctan(r)/2
+            rot_error.append(theta)
+        rot_error = 1000*_np.array(rot_error)
+        avg = _np.mean(rot_error)
+        std = _np.std(rot_error)
+        plt.plot([0, len(rot_error)-1], [+spec_roll, ]*2, 'k--')
+        plt.plot([0, len(rot_error)-1], [-spec_roll, ]*2, 'k--')
+        plt.plot([0, len(rot_error)-1], [avg, avg], 'r-')
+        plt.plot([0, len(rot_error)-1], [avg-std, avg-std], 'r--')
+        plt.plot([0, len(rot_error)-1], [avg+std, avg+std], 'r--')
+        plt.plot(rot_error, 'ro')
+        plt.xlabel('Magnet Index')
+        plt.ylabel('Rotation Error [mrad]')
+        plt.title(('Quadrupole Rotation Error '
+                   '(Current Index {})').format(curr_idx))
+        return spec_roll, avg, std
 
     def rampup_excitation_curve_plot(self, data_set, plt):
         """."""
@@ -1133,7 +1233,7 @@ class MagnetsAnalysis:
 
         for i in range(len(self.serials)):
             d = self._magnetsdata[self.serials[i]]
-            gl_interp = d.rampup_interpolate(data_set, c_avg)
+            gl_interp = d.rampup_curr_2_main_mpole(data_set, c_avg)
             g_dif = gl_interp - g_avg
             # print(d.serial_number, max(abs(g_dif)))
             plt.plot(c_avg, g_dif)
@@ -1166,9 +1266,9 @@ class MagnetsAnalysis:
         for i in range(len(currents)):
             g_avg, g_std, c, g = get_gl_set(i)
             error = [100*(gv - g_avg)/g_avg for gv in g]
-            fmtstr = ('current: {:+8.3f} [A], rms_error: {:7.4f} [%], '
+            fmtstr = ('current {:02d}: {:+8.3f} [A], rms_error: {:7.4f} [%], '
                       'max_error: {:7.4f} [%]')
-            print(fmtstr.format(_np.mean(c),
+            print(fmtstr.format(i, _np.mean(c),
                                 abs(100*g_std/g_avg), max(_np.abs(error))))
             errors.append(error)
             cs.append(c)
@@ -1270,9 +1370,13 @@ class MagnetsAnalysis:
         for data in self._magnetsdata.values():
             data.save_excdata(data_set, harmonics)
 
-    def multipole_errors_kickx_plot(self, data_set, plt, energy=3.0):
+    def multipole_errors_kickx_plot(self, data_set, plt, curr_idx=None,
+                                    energy=3.0):
         """."""
-        idx = self.tmpl.get_max_current_index()
+        if curr_idx is None:
+            idx = self.tmpl.get_max_current_index()
+        else:
+            idx = curr_idx
         for s in self._magnetsdata:
             mdata = self._magnetsdata[s]
             x, y, kx, ky = mdata.multipoles_kicks_residual(
@@ -1286,13 +1390,18 @@ class MagnetsAnalysis:
         plt.plot(1e3*x, 1e6*kx[0], '--r')
         plt.plot(1e3*x, 1e6*kx[1], '--r')
         plt.xlabel('X [mm]')
-        plt.ylabel('Residual kick @ maximum current for 3GeV [urad]')
-        plt.title('Residual horizontal kick due to multipole errors')
+        plt.ylabel('Residual kick [urad]')
+        plt.title(('Residual horizontal kick due to multipole errors '
+                   '(Current Index {})').format(curr_idx))
         plt.grid()
 
-    def multipole_errors_kicky_plot(self, data_set, plt, energy=3.0):
+    def multipole_errors_kicky_plot(self, data_set, plt, curr_idx=None,
+                                    energy=3.0):
         """."""
-        idx = self.tmpl.get_max_current_index()
+        if curr_idx is None:
+            idx = self.tmpl.get_max_current_index()
+        else:
+            idx = curr_idx
         for s in self._magnetsdata:
             mdata = self._magnetsdata[s]
             x, y, kx, ky = mdata.multipoles_kicks_residual(
@@ -1306,9 +1415,68 @@ class MagnetsAnalysis:
         plt.plot(1e3*x, 1e6*ky[0], '--r')
         plt.plot(1e3*x, 1e6*ky[1], '--r')
         plt.xlabel('X [mm]')
-        plt.ylabel('Residual kick @ maximum current for 3GeV [urad]')
-        plt.title('Residual vertical kick due to multipole errors')
+        plt.ylabel('Residual kick [urad]')
+        plt.title(('Residual vertical kick due to multipole errors '
+                   '(Current Index {})').format(curr_idx))
         plt.grid()
+
+    def readme_print(self, data_set, curr_idx):
+        """."""
+        c, gl = self.tmpl.get_rampup(data_set)
+        cidx = curr_idx
+        line1 = self.tmpl.magnet_type_label + \
+            ' Magnetic Center and Integrated Main Multipole'
+        print(line1)
+        print(len(line1)*'='+'\n')
+        print('As measured with rotcoil for I = {0:3.0f}A\n'.format(c[cidx]))
+        print('{0:7s} |{1:^29s} |'.format('Magnet', 'M1'))
+        print('{0:7s} |'.format(''), end='')
+        st = '{:>8s} {:>8s} {:>10s} |'.format(
+            'x0 [mm]', 'y0 [mm]', 'GL/I [T/mA]')
+        print(1*st)
+        for s in self._magnetsdata:
+            print('{}-{} |'.format(self.tmpl.magnet_type_label, s), end='')
+            for med in self.tmpl.data_sets:
+                x = self._magnetsdata[s].get_magnetic_center_x(med)[cidx]
+                y = self._magnetsdata[s].get_magnetic_center_y(med)[cidx]
+                c, gl = self._magnetsdata[s].get_rampup(med)
+                print('{:+8.1f} {:+8.1f} {:+10.4f}  |'.format(
+                    x, y, 1000*gl[cidx]/c[cidx]), end='')
+            print()
+
+    def readme_multipoles_print(self, data_set, curr_idx):
+        """."""
+        # print comment lines
+        print(('# multipoles are divided by excitation current and units are'
+               ' [T], [m] and [A]'))
+        print('# harmonics (dipole n=0): ', end='')
+        for h in self.tmpl.harmonics:
+            print('{:02d} '.format(h-1), end='')
+        print('')
+        print(('# MAG_LABEL   CURRENT[A]   '
+               '<NORMAL_MULTIPOLES/CURRENT>[T/m^(n-1)/A]   '
+               '<SKEW_MULTIPOLES/CURRENT>[T/m^(n-1)/A]'))
+
+        # print multipoles
+        for mag, mdata in self._magnetsdata.items():
+            print('{:9<s}   '.format(self.tmpl.magnet_type_label + '-' + mag),
+                  end='')
+            c, _ = mdata.get_rampup(data_set)
+            current = c[curr_idx]
+            print('{:+.6e}   '.format(current), end='')
+            ind = mdata.get_rampup_indices()
+            idx = ind[curr_idx]
+            nmpoles = mdata.get_intmpole_normal_avg_current(data_set, idx)
+            nmpoles = _np.array(nmpoles) / current
+            for i in range(len(nmpoles)):
+                print('{:+.6e} '.format(nmpoles[i]), end='')
+            print('  ', end='')
+            smpoles = mdata.get_intmpole_skew_avg_current(data_set, idx)
+            smpoles = _np.array(smpoles) / current
+            for i in range(len(smpoles)):
+                print('{:+.6e} '.format(smpoles[i]), end='')
+            print('  ', end='')
+            print('')
 
     def _create_average_mpoles(self, data_set):
         # average current
