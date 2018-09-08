@@ -6,6 +6,7 @@ import numpy as _np
 from siriuspy import envars as _envars
 from siriuspy import util as _util
 from siriuspy.ramp import util as _rutil
+from matplotlib import gridspec as _gridspec
 
 
 class RotCoilData:
@@ -467,8 +468,11 @@ class RotCoilMeas:
 
         return x, y, [kickx_min, kickx_max], [kicky_min, kicky_max]
 
-    def multipoles_kicks_residual(self, data_set, current_index,
-                                  energy, include_dipole=False, nrpoints=301):
+    def multipoles_kicks_residual_old(self, data_set, current_index,
+                                  energy,
+                                  include_dipole=False,
+                                  include_quadrupole=True,
+                                  nrpoints=301):
         """."""
         brho, *_ = _util.beam_rigidity(energy)
         r0 = self.spec_r0 / 1000.0
@@ -487,7 +491,8 @@ class RotCoilMeas:
             if h != self.main_harmonic:
                 nmpole = self.get_intmpole_normal_avg(data_set, h)
                 smpole = self.get_intmpole_skew_avg(data_set, h)
-                if h == 1 and not include_dipole:
+                if (not include_dipole and h == 1) or \
+                   (not include_quadrupole and h == 2):  # NOTE: TEST !!!!
                     # does not include dipolar error
                     normal_mpoles.append(0.0)
                     skew_mpoles.append(0.0)
@@ -503,6 +508,50 @@ class RotCoilMeas:
                     nmpole = self.get_intmpole_normal_avg(data_set, h)
                     normal_mpoles.append(nmpole[current_index])
                     skew_mpoles.append(0.0)
+        return RotCoilMeas._get_kick(brho, r0,
+                                     main_harm,
+                                     main_mpole,
+                                     normal_harms,
+                                     normal_mpoles,
+                                     skew_harms,
+                                     skew_mpoles,
+                                     nrpoints,
+                                     False)
+
+    def multipoles_kicks_residual(self, data_set, current_index,
+                                  energy,
+                                  excluded_monomials_norm=None,
+                                  excluded_monomials_skew=None,
+                                  nrpoints=301):
+        """."""
+        if excluded_monomials_norm is None:
+            excluded_monomials_norm = []
+        if excluded_monomials_skew is None:
+            excluded_monomials_skew = []
+        brho, *_ = _util.beam_rigidity(energy)
+        r0 = self.spec_r0 / 1000.0
+        main_harm = self.main_harmonic - 1
+        if self.main_harmonic_type == 'normal':
+            mpole = self.get_intmpole_normal_avg(data_set, self.main_harmonic)
+        else:
+            mpole = self.get_intmpole_skew_avg(data_set, self.main_harmonic)
+        main_mpole = mpole[current_index]
+
+        normal_harms = _np.array(self.harmonics) - 1
+        skew_harms = _np.array(self.harmonics) - 1
+        normal_mpoles, skew_mpoles = [], []
+        for i in range(len(self.harmonics)):
+            h = self.harmonics[i]
+            nmpole = self.get_intmpole_normal_avg(data_set, h)
+            smpole = self.get_intmpole_skew_avg(data_set, h)
+            if h in excluded_monomials_norm:
+                normal_mpoles.append(0.0)
+            else:
+                normal_mpoles.append(nmpole[current_index])
+            if h in excluded_monomials_skew:
+                skew_mpoles.append(0.0)
+            else:
+                skew_mpoles.append(smpole[current_index])
         return RotCoilMeas._get_kick(brho, r0,
                                      main_harm,
                                      main_mpole,
@@ -732,6 +781,7 @@ class RotCoilMeas:
     def _get_data_path(self):
         mag_type_name = self.magnet_type_name
         mag_type_name = mag_type_name.replace('quadrupole', 'quadrupoles')
+        mag_type_name = mag_type_name.replace('sextupole', 'sextupoles')
         data_path = \
             self.lnls_ima_path + '/' + mag_type_name + '/' + \
             self.model_version + '/measurement/magnetic/rotcoil/' + \
@@ -957,6 +1007,57 @@ class RotCoilMeas_SIQuadQ20(RotCoilMeas_SI, RotCoilMeas_Quad):
     spec_skew_rms_mpoles = _np.array([0.5, 0.5, 0.5, 0.5])*1e-4
 
 
+class RotCoilMeas_SISextS15(RotCoilMeas_SI, RotCoilMeas_Sext):
+    """Rotation coil measurement of SI sextupole S15."""
+
+    family_folder = 'family_1/'
+
+    conv_mpoles_sign = +1.0  # meas with default current polarity!
+    magnet_type_label = 'S15'
+    magnet_type_name = 'si-sextupole-s15'
+    model_version = 'model-07'
+    magnet_hardedge_length = 0.15  # [m]
+    nominal_KL_values = {
+        'SI-Fam:MA-SFA0': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFA0'],
+        'SI-Fam:MA-SFB0': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFB0'],
+        'SI-Fam:MA-SFP0': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFP0'],
+        'SI-Fam:MA-SFA1': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFA1'],
+        'SI-Fam:MA-SFB1': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFB1'],
+        'SI-Fam:MA-SFP1': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFP1'],
+        'SI-Fam:MA-SFA2': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFA2'],
+        'SI-Fam:MA-SFB2': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFB2'],
+        'SI-Fam:MA-SFP2': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFP2'],
+        # using nominal integrated strengths
+        'SI-Fam:MA-SDA0': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDA0'],
+        'SI-Fam:MA-SDB0': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDB0'],
+        'SI-Fam:MA-SDP0': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDP0'],
+        'SI-Fam:MA-SDA1': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDA1'],
+        'SI-Fam:MA-SDB1': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDB1'],
+        'SI-Fam:MA-SDP1': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDP1'],
+        'SI-Fam:MA-SDA2': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDA2'],
+        'SI-Fam:MA-SDB2': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDB2'],
+        'SI-Fam:MA-SDP2': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDP2'],
+        'SI-Fam:MA-SDA3': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDA3'],
+        'SI-Fam:MA-SDB3': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDB3'],
+        'SI-Fam:MA-SDP3': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDP3'],
+    }
+    spec_main_intmpole_rms_error = 0.05  # [%]
+    spec_main_intmpole_max_value = 360.24921758801  # [T/m] (spec in wiki)
+    spec_magnetic_center_x = 40.0  # [um]
+    spec_magnetic_center_y = 40.0  # [um]
+    spec_roll = 0.3  # [mrad]
+
+    spec_r0 = 12.0  # [mm]
+    spec_normal_sys_harms = _np.array([4, 6, 8, 14]) + 1
+    spec_normal_sys_mpoles = _np.array([-7.0e-5, -1.4e-4, -2.4e-3, +1.4e-3])
+    spec_normal_rms_harms = _np.array([3, 4, 5, 6]) + 1
+    spec_normal_rms_mpoles = _np.array([7.0, 5.0, 4.0, 2.0])*1e-4
+    spec_skew_sys_harms = _np.array([])
+    spec_skew_sys_mpoles = _np.array([])
+    spec_skew_rms_harms = _np.array([3, 4, 5, 6]) + 1
+    spec_skew_rms_mpoles = _np.array([5.0, 5.0, 0.5, 0.5])*1e-4
+
+
 class RotCoilMeas_BOQuadQD(RotCoilMeas_BO, RotCoilMeas_Quad):
     """Rotation coil measurement of BO quadrupole magnets QD."""
 
@@ -1019,10 +1120,20 @@ class MagnetsAnalysis:
 
     def __init__(self, rotcoilmeas_cls, serial_numbers):
         """Init."""
-        self.serials = serial_numbers
-        self._magnetsdata = dict()
-        for s in serial_numbers:
-            self._magnetsdata[s] = rotcoilmeas_cls(s)
+        if isinstance(serial_numbers, dict):
+            # serial_numbers is a dict (for various magnet families)
+            self.serials = []
+            for fam, sn in serial_numbers.items():
+                rotcoilmeas_cls.family_folder = fam
+                for s in sn:
+                    self._magnetsdata[s] = rotcoilmeas_cls(s)
+                self.serials.extend(sn)
+        else:
+            # serial_numbers is a list (for single magnet family)
+            self.serials = serial_numbers
+            self._magnetsdata = dict()
+            for s in serial_numbers:
+                self._magnetsdata[s] = rotcoilmeas_cls(s)
         self._average = dict()
 
     def init(self):
@@ -1077,6 +1188,10 @@ class MagnetsAnalysis:
         if isinstance(self.tmpl, RotCoilMeas_Quad):
             plt.ylabel('Integrated Quadrupole [T]')
             plt.title(('Comparison of Integrated Quadrupole at Maximum '
+                       'Current x Specification'))
+        elif isinstance(self.tmpl, RotCoilMeas_Sext):
+            plt.ylabel('Integrated Sextupole [T/m]')
+            plt.title(('Comparison of Integrated Sextupole at Maximum '
                        'Current x Specification'))
         else:
             raise NotImplementedError
@@ -1177,17 +1292,55 @@ class MagnetsAnalysis:
         rot_error = 1000*_np.array(rot_error)
         avg = _np.mean(rot_error)
         std = _np.std(rot_error)
-        plt.plot([0, len(rot_error)-1], [+spec_roll, ]*2, 'k--')
-        plt.plot([0, len(rot_error)-1], [-spec_roll, ]*2, 'k--')
-        plt.plot([0, len(rot_error)-1], [avg, avg], 'r-')
-        plt.plot([0, len(rot_error)-1], [avg-std, avg-std], 'r--')
-        plt.plot([0, len(rot_error)-1], [avg+std, avg+std], 'r--')
-        plt.plot(rot_error, 'ro')
-        plt.xlabel('Magnet Index')
-        plt.ylabel('Rotation Error [mrad]')
-        plt.title(('Quadrupole Rotation Error '
-                   '(Current Index {})').format(curr_idx))
+        if plt is not None:
+            plt.plot([0, len(rot_error)-1], [+spec_roll, ]*2, 'k--')
+            plt.plot([0, len(rot_error)-1], [-spec_roll, ]*2, 'k--')
+            plt.plot([0, len(rot_error)-1], [avg, avg], 'r-')
+            plt.plot([0, len(rot_error)-1], [avg-std, avg-std], 'r--')
+            plt.plot([0, len(rot_error)-1], [avg+std, avg+std], 'r--')
+            plt.plot(rot_error, 'ro')
+            plt.xlabel('Magnet Index')
+            plt.ylabel('Rotation Error [mrad]')
+            plt.title(('Quadrupole Rotation Error '
+                       '(Current Index {})').format(curr_idx))
         return spec_roll, avg, std
+
+    def rotation_error_vs_current_plot(self, data_set, energy, plt):
+        """."""
+        vec_curr, *_ = self.tmpl.get_rampup(data_set)
+        vec_curr = _np.array(vec_curr)
+        vec_avg = _np.zeros(len(vec_curr))
+        vec_std = _np.zeros(len(vec_curr))
+        for i in range(len(vec_curr)):
+            spec, vec_avg[i], vec_std[i] = \
+                self.rotation_error_plot(data_set, None, i)
+        d = self.tmpl.get_nominal_main_intmpole_values(energy)
+        nom_curr, nom_fams = [], []
+        for fam, gl in d.items():
+            c = self.tmpl.rampup_main_mpole_2_curr(data_set, gl)
+            nom_curr.append(c)
+            nom_fams.append(fam)
+        nom_curr = _np.array(nom_curr)
+        nom_fams = _np.array(nom_fams)
+        arr1inds = nom_curr.argsort()
+        nom_curr = nom_curr[arr1inds]
+        nom_fams = nom_fams[arr1inds]
+        plt.plot([min(vec_curr), max(vec_curr)], [+spec, ]*2, 'k--')
+        plt.plot([min(vec_curr), max(vec_curr)], [-spec, ]*2, 'k--')
+        plt.plot(vec_curr, vec_avg, '-r')
+        plt.plot(vec_curr, vec_avg - vec_std, '--r')
+        plt.plot(vec_curr, vec_avg + vec_std, '--r')
+        y = [min(-spec, min(vec_avg-vec_std)),
+             max(+spec, max(vec_avg+vec_std))]
+        print('Currents for nominal strengths:')
+        for i in range(len(nom_curr)):
+            plt.plot([nom_curr[i], ]*2, y, '-.g')
+            print('{:<10s}: {:.1f} A'.format(nom_fams[i], nom_curr[i]))
+        plt.xlabel('RampUp Current [A]')
+        plt.ylabel('Rotation Error [mrad]')
+        plt.title(('Rotation Error as Defined by Skew and Normal '
+                    'of Main Multipole'))
+        plt.grid()
 
     def rampup_excitation_curve_plot(self, data_set, plt):
         """."""
@@ -1203,6 +1356,8 @@ class MagnetsAnalysis:
 
         if isinstance(self.tmpl, RotCoilMeas_Quad):
             sstr = 'Integrated Quadrupole [T]'
+        elif isinstance(self.tmpl, RotCoilMeas_Sext):
+            sstr = 'Integrated Sextupole [T/m]'
         else:
             raise NotImplementedError()
 
@@ -1242,6 +1397,8 @@ class MagnetsAnalysis:
 
         if isinstance(self.tmpl, RotCoilMeas_Quad):
             sstr = 'Integrated Quadrupole'
+        elif isinstance(self.tmpl, RotCoilMeas_Sext):
+            sstr = 'Integrated Sextupole'
         else:
             raise NotImplementedError()
 
@@ -1297,6 +1454,8 @@ class MagnetsAnalysis:
         plt.xlabel('Current [A]')
         if isinstance(self.tmpl, RotCoilMeas_Quad):
             plt.ylabel('Quadrupole Hysteresis [T]')
+        elif isinstance(self.tmpl, RotCoilMeas_Sext):
+            plt.ylabel('Sextupole Hysteresis [T/m]')
         else:
             raise NotImplementedError()
         plt.grid()
@@ -1312,6 +1471,8 @@ class MagnetsAnalysis:
             plt.xlabel('Current [A]')
             if isinstance(self.tmpl, RotCoilMeas_Quad):
                 plt.ylabel('Quadrupole Hysteresis [%]')
+            elif isinstance(self.tmpl, RotCoilMeas_Sext):
+                plt.ylabel('Sextupole Hysteresis [%]')
             else:
                 raise NotImplementedError()
             plt.grid()
@@ -1371,54 +1532,140 @@ class MagnetsAnalysis:
             data.save_excdata(data_set, harmonics)
 
     def multipole_errors_kickx_plot(self, data_set, plt, curr_idx=None,
+                                    excluded_monomials_plot1=None,
+                                    excluded_monomials_plot2=None,
                                     energy=3.0):
         """."""
+        excmon1, excmon2 = None, None
+        nr_plots = 0
+        if excluded_monomials_plot1 is not None:
+            nr_plots += 1
+            excmon1 = excluded_monomials_plot1
+        if excluded_monomials_plot2 is not None:
+            nr_plots += 1
+            if excmon1 is None:
+                excmon1 = excluded_monomials_plot2
+            else:
+                excmon2 = excluded_monomials_plot2
+
+        if nr_plots == 0:
+            print('Invalid excluded monomials argument!')
+            return
+
         if curr_idx is None:
             idx = self.tmpl.get_max_current_index()
         else:
             idx = curr_idx
+
+        gs = _gridspec.GridSpec(1, nr_plots)
+        gs.update(left=0.10, right=0.98, hspace=0, wspace=0.30, top=0.98)
+        ax1 = plt.subplot(gs[0, 0])
+        if excmon2 is not None:
+            ax2 = plt.subplot(gs[0, 1], sharex=ax1, sharey=ax1)
         for s in self._magnetsdata:
             mdata = self._magnetsdata[s]
-            x, y, kx, ky = mdata.multipoles_kicks_residual(
-                data_set, idx, energy)
-            plt.plot(1e3*x, 1e6*kx, color=[0, 0, 0.5])
+            if excmon1 is not None:
+                x, y, kx, ky = mdata.multipoles_kicks_residual(
+                    data_set, idx,
+                    excluded_monomials_norm=excmon1,
+                    excluded_monomials_skew=excmon1,
+                    energy=energy)
+                ax1.plot(1e3*x, 1e6*kx, color=[0, 0, 0.5])
+            if excmon2 is not None:
+                x, y, kx, ky = mdata.multipoles_kicks_residual(
+                    data_set, idx,
+                    excluded_monomials_norm=excmon2,
+                    excluded_monomials_skew=excmon2,
+                    energy=energy)
+                ax2.plot(1e3*x, 1e6*kx, color=[0, 0, 0.5])
         x, y, kx, ky = self.tmpl.multipoles_kicks_spec_sys(
             data_set, idx, energy)
-        plt.plot(1e3*x, 1e6*kx, 'r')
+        if excmon1 is not None:
+            ax1.plot(1e3*x, 1e6*kx, 'r')
+        if excmon2 is not None:
+            ax2.plot(1e3*x, 1e6*kx, 'r')
         x, y, kx, ky = self.tmpl.multipoles_kicks_spec_rms(
             data_set, idx, energy)
-        plt.plot(1e3*x, 1e6*kx[0], '--r')
-        plt.plot(1e3*x, 1e6*kx[1], '--r')
-        plt.xlabel('X [mm]')
-        plt.ylabel('Residual kick [urad]')
-        plt.title(('Residual horizontal kick due to multipole errors '
-                   '(Current Index {})').format(curr_idx))
-        plt.grid()
+        if excmon1 is not None:
+            ax1.plot(1e3*x, 1e6*kx[0], '--r')
+            ax1.plot(1e3*x, 1e6*kx[1], '--r')
+            ax1.set_xlabel('X [mm]')
+            ax1.set_ylabel('Residual kick [urad]')
+            ax1.grid()
+        if excmon2 is not None:
+            ax2.plot(1e3*x, 1e6*kx[0], '--r')
+            ax2.plot(1e3*x, 1e6*kx[1], '--r')
+            ax2.set_xlabel('X [mm]')
+            ax2.set_ylabel('Residual kick [urad]')
+            ax2.grid()
 
     def multipole_errors_kicky_plot(self, data_set, plt, curr_idx=None,
+                                    excluded_monomials_plot1=None,
+                                    excluded_monomials_plot2=None,
                                     energy=3.0):
         """."""
+        excmon1, excmon2 = None, None
+        nr_plots = 0
+        if excluded_monomials_plot1 is not None:
+            nr_plots += 1
+            excmon1 = excluded_monomials_plot1
+        if excluded_monomials_plot2 is not None:
+            nr_plots += 1
+            if excmon1 is None:
+                excmon1 = excluded_monomials_plot2
+            else:
+                excmon2 = excluded_monomials_plot2
+
+        if nr_plots == 0:
+            print('Invalid excluded monomials argument!')
+            return
+
         if curr_idx is None:
             idx = self.tmpl.get_max_current_index()
         else:
             idx = curr_idx
+
+        gs = _gridspec.GridSpec(1, nr_plots)
+        gs.update(left=0.10, right=0.98, hspace=0, wspace=0.30, top=0.98)
+        ax1 = plt.subplot(gs[0, 0])
+        if excmon2 is not None:
+            ax2 = plt.subplot(gs[0, 1], sharex=ax1, sharey=ax1)
         for s in self._magnetsdata:
             mdata = self._magnetsdata[s]
-            x, y, kx, ky = mdata.multipoles_kicks_residual(
-                data_set, idx, energy)
-            plt.plot(1e3*x, 1e6*ky, color=[0, 0, 0.5])
+            if excmon1 is not None:
+                x, y, kx, ky = mdata.multipoles_kicks_residual(
+                    data_set, idx,
+                    excluded_monomials_norm=excmon1,
+                    excluded_monomials_skew=excmon1,
+                    energy=energy)
+                ax1.plot(1e3*x, 1e6*ky, color=[0, 0, 0.5])
+            if excmon2 is not None:
+                x, y, kx, ky = mdata.multipoles_kicks_residual(
+                    data_set, idx,
+                    excluded_monomials_norm=excmon2,
+                    excluded_monomials_skew=excmon2,
+                    energy=energy)
+                ax2.plot(1e3*x, 1e6*ky, color=[0, 0, 0.5])
         x, y, kx, ky = self.tmpl.multipoles_kicks_spec_sys(
             data_set, idx, energy)
-        plt.plot(1e3*x, 1e6*ky, 'r')
+        if excmon1 is not None:
+            ax1.plot(1e3*x, 1e6*ky, 'r')
+        if excmon2 is not None:
+            ax2.plot(1e3*x, 1e6*ky, 'r')
         x, y, kx, ky = self.tmpl.multipoles_kicks_spec_rms(
             data_set, idx, energy)
-        plt.plot(1e3*x, 1e6*ky[0], '--r')
-        plt.plot(1e3*x, 1e6*ky[1], '--r')
-        plt.xlabel('X [mm]')
-        plt.ylabel('Residual kick [urad]')
-        plt.title(('Residual vertical kick due to multipole errors '
-                   '(Current Index {})').format(curr_idx))
-        plt.grid()
+        if excmon1 is not None:
+            ax1.plot(1e3*x, 1e6*ky[0], '--r')
+            ax1.plot(1e3*x, 1e6*ky[1], '--r')
+            ax1.set_xlabel('X [mm]')
+            ax1.set_ylabel('Residual kick [urad]')
+            ax1.grid()
+        if excmon2 is not None:
+            ax2.plot(1e3*x, 1e6*ky[0], '--r')
+            ax2.plot(1e3*x, 1e6*ky[1], '--r')
+            ax2.set_xlabel('X [mm]')
+            ax2.set_ylabel('Residual kick [urad]')
+            ax2.grid()
 
     def readme_print(self, data_set, curr_idx):
         """."""
