@@ -1406,7 +1406,7 @@ class MagnetsAnalysis:
         plt.xlabel('RampUp Current [A]')
         plt.ylabel('Rotation Error [mrad]')
         plt.title(('Rotation Error as Defined by Skew and Normal '
-                    'of Main Multipole'))
+                   'of Main Multipole'))
         plt.grid(True)
 
     def rampup_excitation_curve_plot(self, data_set, plt):
