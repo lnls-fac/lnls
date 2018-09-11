@@ -5,6 +5,7 @@ import numpy as _np
 
 from siriuspy import envars as _envars
 from siriuspy import util as _util
+from siriuspy.magnet import util as _mutil
 from siriuspy.ramp import util as _rutil
 from matplotlib import gridspec as _gridspec
 
@@ -119,6 +120,19 @@ class RotCoilData:
         for r in RotCoilData._del:
             param = param.replace(r, '')
         return param
+
+
+class RotCoilMeas_Cor:
+    """Rotation coil measurement of corrector magnets."""
+
+    main_harmonic = 1  # 1: dipole, 2:quadrupole, etc...
+    pwrsupply_polarity = 'bipolar'
+
+
+class RotCoilMeas_HCor(RotCoilMeas_Cor):
+    """Rotation coil measurement of horizontal corrector magnets."""
+
+    main_harmonic_type = 'normal'
 
 
 class RotCoilMeas_Quad:
@@ -248,7 +262,7 @@ class RotCoilMeas:
             # data = self._rotcoildata[data_set]
             currents = self.get_currents(data_set)
             max_c = max(currents)
-            # print(data_set, max_c)
+            # print(self.serial_number, data_set, max_c)
             max_c_i.append(currents.index(max_c))
         umaxci = _np.unique(max_c_i)
         # print(umaxci)
@@ -469,10 +483,10 @@ class RotCoilMeas:
         return x, y, [kickx_min, kickx_max], [kicky_min, kicky_max]
 
     def multipoles_kicks_residual_old(self, data_set, current_index,
-                                  energy,
-                                  include_dipole=False,
-                                  include_quadrupole=True,
-                                  nrpoints=301):
+                                      energy,
+                                      include_dipole=False,
+                                      include_quadrupole=True,
+                                      nrpoints=301):
         """."""
         brho, *_ = _util.beam_rigidity(energy)
         r0 = self.spec_r0 / 1000.0
@@ -620,7 +634,7 @@ class RotCoilMeas:
         # main_harmonic = (main_harmonic-1, main_harmonic_type)
         units = ''
         for h in harmonics:
-            unit = _util.get_intmpole_units(h-1)
+            unit = _mutil.get_multipole_si_units(h-1)
             units += unit + ' ' + unit + '  '
         units = units.strip()
         harms = ' '.join((str(h-1) for h in harmonics))
@@ -684,6 +698,8 @@ class RotCoilMeas:
         """."""
         if self.magnet_type_label == 'Q30' and self.serial_number == '011':
             return self._specialized_rampupind_Q30_011()
+        elif self.magnet_type_label == 'BC':
+            return self._specialized_rampupind_BC()
         else:
             idx = self.get_max_current_index()
             return tuple(range(idx+1))
@@ -692,6 +708,8 @@ class RotCoilMeas:
         """."""
         if self.magnet_type_label == 'Q30' and self.serial_number == '011':
             return tuple(range(37, 49+1))
+        elif self.magnet_type_label == 'BC':
+            return self._specialized_rampdownind_BC()
         else:
             idx = self.get_max_current_index()
             return tuple(range(idx, self.size))
@@ -726,9 +744,11 @@ class RotCoilMeas:
                     b2 = d.intmpole_normal_avg[idx_sext]
                     S = b2 + a2 * 1j
                     z0 = -Q/S/2.0
-                    B = D - S*z0**2
-                    d.magnetic_center_intby = B.real
-                    d.magnetic_center_intbx = B.imag
+                    # B = D - S*z0**2
+                    # d.magnetic_center_intbx = B.imag
+                    # d.magnetic_center_intby = B.real
+                elif isinstance(self, RotCoilMeas_Cor):
+                    z0 = 0 + 0 * 1j
                 else:
                     raise NotImplementedError()
                 d.magnetic_center_x = 1e6 * z0.real
@@ -746,7 +766,7 @@ class RotCoilMeas:
         filename = self.magnet_type_name + '-' + magnet_serial_number
         units = ''
         for h in harmonics:
-            unit = _util.get_intmpole_units(h-1)
+            unit = _mutil.get_multipole_si_units(h-1)
             units += unit + ' ' + unit + '  '
         units = units.strip()
 
@@ -782,6 +802,7 @@ class RotCoilMeas:
         mag_type_name = self.magnet_type_name
         mag_type_name = mag_type_name.replace('quadrupole', 'quadrupoles')
         mag_type_name = mag_type_name.replace('sextupole', 'sextupoles')
+        mag_type_name = mag_type_name.replace('corrector-ch', 'correctors')
         data_path = \
             self.lnls_ima_path + '/' + mag_type_name + '/' + \
             self.model_version + '/measurement/magnetic/rotcoil/' + \
@@ -797,6 +818,9 @@ class RotCoilMeas:
         elif self.magnet_type_label == 'Q20' and \
                 self.serial_number in ('006', '093', '008', '004'):
             fs = self._specialized_data_sets_Q20()
+        elif self.magnet_type_label == 'BC' and \
+                self.serial_number in ('059', '060', '062'):
+            fs = self._specialized_data_sets_BC()
         else:
             fs = _os.listdir(data_path)
         files = []
@@ -855,6 +879,9 @@ class RotCoilMeas:
         # M1_ferromag is incomplete
         return ['M1']
 
+    def _specialized_data_sets_BC(self):
+        return ['M1']
+
     def _specialized_sort_Q14_060(self, mdata):
         files = (
             'Q14-060_Q_BOA_000.0A_180407_095148.dat',
@@ -887,6 +914,12 @@ class RotCoilMeas:
 
     def _specialized_rampupind_Q30_011(self):
         return tuple(range(25, 37+1))
+
+    def _specialized_rampupind_BC(self):
+        return [18, 19, 20, 21, 22, 23, 24, 1, 2, 3, 4, 5, 6]
+
+    def _specialized_rampdownind_BC(self):
+        return [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
 
     def _sort(self, mdata, files):
         dataset_datum = []
@@ -1115,6 +1148,36 @@ class RotCoilMeas_BOQuadQF(RotCoilMeas_BO, RotCoilMeas_Quad):
     spec_skew_rms_mpoles = _np.array([10, 5, 1, 1, 1, 1, 1])*1e-4
 
 
+class RotCoilMeas_BOCorH(RotCoilMeas_BO, RotCoilMeas_HCor):
+    """Rotation coil measurement of BO horizontal correctors."""
+
+    conv_mpoles_sign = -1.0  # meas with opposite current polarity!
+    magnet_type_label = 'BC'
+    magnet_type_name = 'bo-corrector-ch'
+    model_version = 'model-02'
+    magnet_hardedge_length = 0.15018  # [m]
+    nominal_KL_values = {
+    }
+    spec_main_intmpole_rms_error = 0.3  # [%]
+    spec_main_intmpole_max_value = 0.003102146040341  # [T.m] (wiki-sirius)
+    spec_magnetic_center_x = 160.0  # [um]
+    spec_magnetic_center_y = 160.0  # [um]
+    spec_roll = 0.8  # [mrad]
+
+    spec_r0 = 17.5  # [mm]
+    # there is not multipole spec. using one based on prototype meas and
+    # dynapt testes.
+    spec_normal_sys_harms = _np.array([1, 2, 3, 4, 5, 6]) + 1
+    spec_normal_sys_mpoles = _np.array(
+        [-3.0e-4, +3.0e-3, +1.3e-4, -3.3e-3, +6.2e-4, -3.2e-3])
+    spec_normal_rms_harms = _np.array([])
+    spec_normal_rms_mpoles = _np.array([])
+    spec_skew_sys_harms = _np.array([0, ]) + 1
+    spec_skew_sys_mpoles = _np.array([0, ])
+    spec_skew_rms_harms = _np.array([])
+    spec_skew_rms_mpoles = _np.array([])
+
+
 class MagnetsAnalysis:
     """Measurements of a magnet type magnets."""
 
@@ -1182,7 +1245,7 @@ class MagnetsAnalysis:
         y = (self.spec_max, ) * 2
         plt.plot([0, len(self.max_mpole)-1], y, '--k')
         plt.plot(self.max_mpole, 'og')
-        plt.grid()
+        plt.grid(True)
         plt.legend(('Spec', 'Data'))
         plt.xlabel('Serial Number Index')
         if isinstance(self.tmpl, RotCoilMeas_Quad):
@@ -1192,6 +1255,10 @@ class MagnetsAnalysis:
         elif isinstance(self.tmpl, RotCoilMeas_Sext):
             plt.ylabel('Integrated Sextupole [T/m]')
             plt.title(('Comparison of Integrated Sextupole at Maximum '
+                       'Current x Specification'))
+        elif isinstance(self.tmpl, RotCoilMeas_Cor):
+            plt.ylabel('Integrated Dipole [T.m]')
+            plt.title(('Comparison of Integrated Dipole at Maximum '
                        'Current x Specification'))
         else:
             raise NotImplementedError
@@ -1231,7 +1298,7 @@ class MagnetsAnalysis:
         plt.xlabel('Current [A]')
         plt.ylabel(dstr + 'position [um]')
         plt.title(dstr + 'center of magnets fields x current')
-        plt.grid()
+        plt.grid(True)
 
     def magnetic_center_plot(self, data_set, plt):
         """."""
@@ -1287,7 +1354,7 @@ class MagnetsAnalysis:
             n = d.get_intmpole_normal_avg(data_set, d.main_harmonic)
             s = d.get_intmpole_skew_avg(data_set, d.main_harmonic)
             r = s[curr_idx]/n[curr_idx]
-            theta = _np.arctan(r)/2
+            theta = _np.arctan(r)/d.main_harmonic
             rot_error.append(theta)
         rot_error = 1000*_np.array(rot_error)
         avg = _np.mean(rot_error)
@@ -1340,7 +1407,7 @@ class MagnetsAnalysis:
         plt.ylabel('Rotation Error [mrad]')
         plt.title(('Rotation Error as Defined by Skew and Normal '
                     'of Main Multipole'))
-        plt.grid()
+        plt.grid(True)
 
     def rampup_excitation_curve_plot(self, data_set, plt):
         """."""
@@ -1358,6 +1425,8 @@ class MagnetsAnalysis:
             sstr = 'Integrated Quadrupole [T]'
         elif isinstance(self.tmpl, RotCoilMeas_Sext):
             sstr = 'Integrated Sextupole [T/m]'
+        elif isinstance(self.tmpl, RotCoilMeas_Cor):
+            sstr = 'Integrated Dipole [T.m]'
         else:
             raise NotImplementedError()
 
@@ -1370,11 +1439,13 @@ class MagnetsAnalysis:
         plt.xlabel('Current [A]')
         plt.ylabel(sstr)
         plt.title('Ramp Up of All Magnets')
-        plt.grid()
+        plt.grid(True)
 
     def rampup_excitation_curve_dispersion_plot(self, data_set, plt):
         """."""
-        shape = (len(self.serials), 1+self.tmpl.get_max_current_index())
+        ind = self.tmpl.get_rampup_indices()
+        shape = (len(self.serials), len(ind))
+        # shape = (len(self.serials), 1+self.tmpl.get_max_current_index())
         c, g = _np.zeros(shape), _np.zeros(shape)
         for i in range(len(self.serials)):
             d = self._magnetsdata[self.serials[i]]
@@ -1399,6 +1470,8 @@ class MagnetsAnalysis:
             sstr = 'Integrated Quadrupole'
         elif isinstance(self.tmpl, RotCoilMeas_Sext):
             sstr = 'Integrated Sextupole'
+        elif isinstance(self.tmpl, RotCoilMeas_Cor):
+            sstr = 'Integrated Dipole'
         else:
             raise NotImplementedError()
 
@@ -1456,9 +1529,11 @@ class MagnetsAnalysis:
             plt.ylabel('Quadrupole Hysteresis [T]')
         elif isinstance(self.tmpl, RotCoilMeas_Sext):
             plt.ylabel('Sextupole Hysteresis [T/m]')
+        elif isinstance(self.tmpl, RotCoilMeas_Cor):
+            plt.ylabel('Sextupole Hysteresis [T.m]')
         else:
             raise NotImplementedError()
-        plt.grid()
+        plt.grid(True)
 
     def hysteresis_relative_plot(self, data_set, plt):
         """."""
@@ -1473,9 +1548,11 @@ class MagnetsAnalysis:
                 plt.ylabel('Quadrupole Hysteresis [%]')
             elif isinstance(self.tmpl, RotCoilMeas_Sext):
                 plt.ylabel('Sextupole Hysteresis [%]')
+            elif isinstance(self.tmpl, RotCoilMeas_Cor):
+                plt.ylabel('Dipole Hysteresis [%]')
             else:
                 raise NotImplementedError()
-            plt.grid()
+            plt.grid(True)
 
     def save_excdata_average(self, data_set, harmonics=None):
         """Save excitation data."""
@@ -1489,7 +1566,7 @@ class MagnetsAnalysis:
         filename = self.tmpl.magnet_type_name + '-fam'
         units = ''
         for h in harmonics:
-            unit = _util.get_intmpole_units(h-1)
+            unit = _mutil.get_multipole_si_units(h-1)
             units += unit + ' ' + unit + '  '
         units = units.strip()
 
@@ -1678,8 +1755,15 @@ class MagnetsAnalysis:
         print('As measured with rotcoil for I = {0:3.0f}A\n'.format(c[cidx]))
         print('{0:7s} |{1:^29s} |'.format('Magnet', 'M1'))
         print('{0:7s} |'.format(''), end='')
-        st = '{:>8s} {:>8s} {:>10s} |'.format(
-            'x0 [mm]', 'y0 [mm]', 'GL/I [T/mA]')
+        if isinstance(self.tmpl, RotCoilMeas_Quad):
+            st = '{:>8s} {:>8s} {:>10s} |'.format(
+                'x0 [mm]', 'y0 [mm]', 'GL/I [T/mA]')
+        elif isinstance(self.tmpl, RotCoilMeas_Sext):
+            st = '{:>8s} {:>8s} {:>10s} |'.format(
+                'x0 [mm]', 'y0 [mm]', 'SL/I [T/m/mA]')
+        elif isinstance(self.tmpl, RotCoilMeas_Cor):
+            st = '{:>8s} {:>8s} {:>10s} |'.format(
+                'x0 [mm]', 'y0 [mm]', 'BL/I [T.m/mA]')
         print(1*st)
         for s in self._magnetsdata:
             print('{}-{} |'.format(self.tmpl.magnet_type_label, s), end='')
