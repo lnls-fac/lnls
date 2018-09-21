@@ -697,12 +697,12 @@ class RotCoilMeas:
     def get_rampup_indices(self):
         """."""
         if self.magnet_type_label == 'Q30' and self.serial_number == '011':
-            return self._specialized_rampupind_Q30_011()
+            return list(self._specialized_rampupind_Q30_011())
         elif self.magnet_type_label == 'BC':
-            return self._specialized_rampupind_BC()
+            return list(self._specialized_rampupind_BC())
         else:
             idx = self.get_max_current_index()
-            return tuple(range(idx+1))
+            return list(range(idx+1))
 
     def get_rampdown_indices(self):
         """."""
@@ -801,6 +801,7 @@ class RotCoilMeas:
     def _get_data_path(self):
         mag_type_name = self.magnet_type_name
         mag_type_name = mag_type_name.replace('quadrupole', 'quadrupoles')
+        mag_type_name = mag_type_name.replace('sextupole-sf', 'sextupole')
         mag_type_name = mag_type_name.replace('sextupole', 'sextupoles')
         mag_type_name = mag_type_name.replace('corrector-ch', 'correctors')
         data_path = \
@@ -821,6 +822,9 @@ class RotCoilMeas:
         elif self.magnet_type_label == 'BC' and \
                 self.serial_number in ('059', '060', '062'):
             fs = self._specialized_data_sets_BC()
+        elif self.magnet_type_label == 'BS' and \
+                self.serial_number in ('007', ):
+            fs = self._specialized_data_sets_BS_007()
         else:
             fs = _os.listdir(data_path)
         files = []
@@ -881,6 +885,9 @@ class RotCoilMeas:
 
     def _specialized_data_sets_BC(self):
         return ['M1']
+
+    def _specialized_data_sets_BS_007(self):
+        return ['M2', 'M3']
 
     def _specialized_sort_Q14_060(self, mdata):
         files = (
@@ -1089,6 +1096,36 @@ class RotCoilMeas_SISextS15(RotCoilMeas_SI, RotCoilMeas_Sext):
     spec_skew_sys_mpoles = _np.array([])
     spec_skew_rms_harms = _np.array([3, 4, 5, 6]) + 1
     spec_skew_rms_mpoles = _np.array([5.0, 5.0, 0.5, 0.5])*1e-4
+
+
+class RotCoilMeas_BOSext(RotCoilMeas_BO, RotCoilMeas_Sext):
+    """Rotation coil measurement of BO sextupoles."""
+
+    conv_mpoles_sign = +1.0  # meas with default current polarity!
+    magnet_type_label = 'BS'
+    magnet_type_name = 'bo-sextupole-sf'
+    model_version = 'model-03'
+    magnet_hardedge_length = 0.105  # [m]
+    nominal_KL_values = {
+        'BO-Fam:MA-SF': _rutil.NOMINAL_STRENGTHS['BO-Fam:MA-SF'],
+        'BO-Fam:MA-SD': _rutil.NOMINAL_STRENGTHS['BO-Fam:MA-SD'],
+    }
+    spec_main_intmpole_rms_error = 0.3  # [%]
+    spec_main_intmpole_max_value = 21.014537692633  # [T/m] (spec wiki-sirius)
+    spec_magnetic_center_x = 160.0  # [um]
+    spec_magnetic_center_y = 160.0  # [um]
+    pwrsupply_polarity = 'bipolar'
+    spec_roll = 0.8  # [mrad]
+
+    spec_r0 = 17.5  # [mm]
+    spec_normal_sys_harms = _np.array([8, 14]) + 1
+    spec_normal_sys_mpoles = _np.array([-2.7e-2, -1.4e-2])
+    spec_normal_rms_harms = _np.array([3, 4, 5, 6, 7, 8, 9]) + 1
+    spec_normal_rms_mpoles = _np.array([4, 4, 4, 4, 4, 4, 4])*1e-4
+    spec_skew_sys_harms = _np.array([])
+    spec_skew_sys_mpoles = _np.array([])
+    spec_skew_rms_harms = _np.array([3, 4, 5, 6, 7, 8, 9]) + 1
+    spec_skew_rms_mpoles = _np.array([1, 1, 1, 1, 1, 1, 1])*1e-4
 
 
 class RotCoilMeas_BOQuadQD(RotCoilMeas_BO, RotCoilMeas_Quad):
@@ -1348,11 +1385,13 @@ class MagnetsAnalysis:
     def rotation_error_plot(self, data_set, plt, curr_idx):
         """."""
         rot_error = []
+        ind = self.tmpl.get_rampup_indices()
         for i in range(len(self.serials)):
             d = self._magnetsdata[self.serials[i]]
             spec_roll = d.spec_roll
-            n = d.get_intmpole_normal_avg(data_set, d.main_harmonic)
-            s = d.get_intmpole_skew_avg(data_set, d.main_harmonic)
+            n = _np.array(d.get_intmpole_normal_avg(data_set, d.main_harmonic))
+            s = _np.array(d.get_intmpole_skew_avg(data_set, d.main_harmonic))
+            n, s = n[ind], s[ind]
             r = s[curr_idx]/n[curr_idx]
             theta = _np.arctan(r)/d.main_harmonic
             rot_error.append(theta)
@@ -1368,7 +1407,7 @@ class MagnetsAnalysis:
             plt.plot(rot_error, 'ro')
             plt.xlabel('Magnet Index')
             plt.ylabel('Rotation Error [mrad]')
-            plt.title(('Quadrupole Rotation Error '
+            plt.title(('Main Multipole Rotation Error '
                        '(Current Index {})').format(curr_idx))
         return spec_roll, avg, std
 
@@ -1446,6 +1485,7 @@ class MagnetsAnalysis:
         ind = self.tmpl.get_rampup_indices()
         shape = (len(self.serials), len(ind))
         # shape = (len(self.serials), 1+self.tmpl.get_max_current_index())
+        print(shape)
         c, g = _np.zeros(shape), _np.zeros(shape)
         for i in range(len(self.serials)):
             d = self._magnetsdata[self.serials[i]]
@@ -1554,43 +1594,43 @@ class MagnetsAnalysis:
                 raise NotImplementedError()
             plt.grid(True)
 
-    def save_excdata_average(self, data_set, harmonics=None):
-        """Save excitation data."""
-        pwrsupply_polarity = self.tmpl.pwrsupply_polarity
-        main_harmonic = int(self.tmpl.main_harmonic)
-        main_harmonic_type = self.tmpl.main_harmonic_type
-        if harmonics is None:
-            harmonics = sorted([int(h) for h in self.tmpl.harmonics])
-        magnet_type_label = self.tmpl.magnet_type_label
-        magnet_serial_number = None
-        filename = self.tmpl.magnet_type_name + '-fam'
-        units = ''
-        for h in harmonics:
-            unit = _mutil.get_multipole_si_units(h-1)
-            units += unit + ' ' + unit + '  '
-        units = units.strip()
-
-        if data_set not in self._average:
-            self._create_average_mpoles(data_set)
-
-        # build text lines
-        lines = RotCoilMeas.get_excdata_text(
-            pwrsupply_polarity,
-            magnet_type_label,
-            magnet_serial_number,
-            data_set,
-            main_harmonic,
-            main_harmonic_type,
-            harmonics,
-            self._average[data_set]['currents'],
-            self._average[data_set]['mpoles_n'],
-            self._average[data_set]['mpoles_s'],
-            filename)
-
-        # save data to file
-        with open(filename + '.txt', 'w') as fp:
-            for line in lines:
-                fp.write(line + '\n')
+    # def save_excdata_average(self, data_set, harmonics=None):
+    #     """Save excitation data."""
+    #     pwrsupply_polarity = self.tmpl.pwrsupply_polarity
+    #     main_harmonic = int(self.tmpl.main_harmonic)
+    #     main_harmonic_type = self.tmpl.main_harmonic_type
+    #     if harmonics is None:
+    #         harmonics = sorted([int(h) for h in self.tmpl.harmonics])
+    #     magnet_type_label = self.tmpl.magnet_type_label
+    #     magnet_serial_number = None
+    #     filename = self.tmpl.magnet_type_name + '-fam'
+    #     units = ''
+    #     for h in harmonics:
+    #         unit = _mutil.get_multipole_si_units(h-1)
+    #         units += unit + ' ' + unit + '  '
+    #     units = units.strip()
+    #
+    #     if data_set not in self._average:
+    #         self._create_average_mpoles(data_set)
+    #
+    #     # build text lines
+    #     lines = RotCoilMeas.get_excdata_text(
+    #         pwrsupply_polarity,
+    #         magnet_type_label,
+    #         magnet_serial_number,
+    #         data_set,
+    #         main_harmonic,
+    #         main_harmonic_type,
+    #         harmonics,
+    #         self._average[data_set]['currents'],
+    #         self._average[data_set]['mpoles_n'],
+    #         self._average[data_set]['mpoles_s'],
+    #         filename)
+    #
+    #     # save data to file
+    #     with open(filename + '.txt', 'w') as fp:
+    #         for line in lines:
+    #             fp.write(line + '\n')
 
     def conv_current_2_mpoles(self, data_set, current):
         """."""
@@ -1603,10 +1643,10 @@ class MagnetsAnalysis:
         interp_mpoles_s = _np.zeros(mpoles_s.shape)
         return None
 
-    def save_excdata_individuals(self, data_set, harmonics=None):
-        """Save excdata of all individual magnets."""
-        for data in self._magnetsdata.values():
-            data.save_excdata(data_set, harmonics)
+    # def save_excdata_individuals(self, data_set, harmonics=None):
+    #     """Save excdata of all individual magnets."""
+    #     for data in self._magnetsdata.values():
+    #         data.save_excdata(data_set, harmonics)
 
     def multipole_errors_kickx_plot(self, data_set, plt, curr_idx=None,
                                     excluded_monomials_plot1=None,
@@ -1629,10 +1669,9 @@ class MagnetsAnalysis:
             print('Invalid excluded monomials argument!')
             return
 
-        if curr_idx is None:
-            idx = self.tmpl.get_max_current_index()
-        else:
-            idx = curr_idx
+        # convert rampup index to general index
+        ind = self.tmpl.get_rampup_indices()
+        idx = ind[curr_idx]
 
         gs = _gridspec.GridSpec(1, nr_plots)
         gs.update(left=0.10, right=0.98, hspace=0, wspace=0.30, top=0.98)
@@ -1697,10 +1736,9 @@ class MagnetsAnalysis:
             print('Invalid excluded monomials argument!')
             return
 
-        if curr_idx is None:
-            idx = self.tmpl.get_max_current_index()
-        else:
-            idx = curr_idx
+        # convert rampup index to general index
+        ind = self.tmpl.get_rampup_indices()
+        idx = ind[curr_idx]
 
         gs = _gridspec.GridSpec(1, nr_plots)
         gs.update(left=0.10, right=0.98, hspace=0, wspace=0.30, top=0.98)
