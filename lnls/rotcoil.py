@@ -135,6 +135,12 @@ class RotCoilMeas_HCor(RotCoilMeas_Cor):
     main_harmonic_type = 'normal'
 
 
+class RotCoilMeas_VCor(RotCoilMeas_Cor):
+    """Rotation coil measurement of vertical corrector magnets."""
+
+    main_harmonic_type = 'skew'
+
+
 class RotCoilMeas_Quad:
     """Rotation coil measurement of quadrupole magnets."""
 
@@ -154,6 +160,7 @@ class RotCoilMeas_Sext:
 class RotCoilMeas:
     """Rotation coil measurement of SI magnets."""
 
+    excitation_type = 'main'
     family_folder = ''
     lnls_ima_path = _envars.folder_lnls_ima
 
@@ -273,14 +280,20 @@ class RotCoilMeas:
     def get_rampup(self, data_set):
         """Rampup data."""
         c = self.get_currents(data_set)
-        gl = self.get_intmpole_normal_avg(data_set, self.main_harmonic)
+        if self.main_harmonic_type == 'normal':
+            gl = self.get_intmpole_normal_avg(data_set, self.main_harmonic)
+        else:
+            gl = self.get_intmpole_skew_avg(data_set, self.main_harmonic)
         ind = self.get_rampup_indices()
         return [c[i] for i in ind], [gl[i] for i in ind]
 
     def get_rampdown_hysteresis(self, data_set):
         """Rampdown hysteresis."""
         c = self.get_currents(data_set)
-        gl = self.get_intmpole_normal_avg(data_set, self.main_harmonic)
+        if self.main_harmonic_type == 'normal':
+            gl = self.get_intmpole_normal_avg(data_set, self.main_harmonic)
+        else:
+            gl = self.get_intmpole_skew_avg(data_set, self.main_harmonic)
 
         ind = self.get_rampup_indices()
         c_lin, gl_lin = zip(*[(c[i], gl[i]) for i in ind])
@@ -700,6 +713,8 @@ class RotCoilMeas:
             return list(self._specialized_rampupind_Q30_011())
         elif self.magnet_type_label == 'BC':
             return list(self._specialized_rampupind_BC())
+        elif self.magnet_type_label == 'TBC':
+            return list(self._specialized_rampupind_TBC())
         else:
             idx = self.get_max_current_index()
             return list(range(idx+1))
@@ -710,6 +725,8 @@ class RotCoilMeas:
             return tuple(range(37, 49+1))
         elif self.magnet_type_label == 'BC':
             return self._specialized_rampdownind_BC()
+        elif self.magnet_type_label == 'TBC':
+            return self._specialized_rampdownind_TBC()
         else:
             idx = self.get_max_current_index()
             return tuple(range(idx, self.size))
@@ -804,12 +821,13 @@ class RotCoilMeas:
         mag_type_name = mag_type_name.replace('sextupole-sf', 'sextupole')
         mag_type_name = mag_type_name.replace('sextupole', 'sextupoles')
         mag_type_name = mag_type_name.replace('corrector-ch', 'correctors')
+        mag_type_name = mag_type_name.replace('corrector-cv', 'correctors')
         data_path = \
             self.lnls_ima_path + '/' + mag_type_name + '/' + \
             self.model_version + '/measurement/magnetic/rotcoil/' + \
             self.family_folder + \
             self.magnet_type_label + '-' + \
-            self.serial_number + '/main'
+            self.serial_number + '/' + self.excitation_type
         return data_path
 
     def _get_data_sets(self):
@@ -928,6 +946,12 @@ class RotCoilMeas:
     def _specialized_rampdownind_BC(self):
         return [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
 
+    def _specialized_rampupind_TBC(self):
+        return [15, 16, 17, 18, 19, 20, 1, 2, 3, 4, 5]
+
+    def _specialized_rampdownind_TBC(self):
+        return [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
     def _sort(self, mdata, files):
         dataset_datum = []
         dfiles = [d.file for d in mdata]
@@ -947,6 +971,13 @@ class RotCoilMeas_SI(RotCoilMeas):
 
 class RotCoilMeas_BO(RotCoilMeas):
     """Rotation coil measurement of BO magnets."""
+
+    # used in case meas was taken with opposite current polarity
+    conv_mpoles_sign = +1.0
+
+
+class RotCoilMeas_TB(RotCoilMeas):
+    """Rotation coil measurement of TB magnets."""
 
     # used in case meas was taken with opposite current polarity
     conv_mpoles_sign = +1.0
@@ -1215,6 +1246,70 @@ class RotCoilMeas_BOCorH(RotCoilMeas_BO, RotCoilMeas_HCor):
     spec_skew_rms_mpoles = _np.array([])
 
 
+class RotCoilMeas_TBCorH(RotCoilMeas_TB, RotCoilMeas_HCor):
+    """Rotation coil measurement of TB horizontal correctors."""
+
+    excitation_type = 'CH'
+
+    # conv_mpoles_sign = -1.0  # meas with opposite current polarity!
+    magnet_type_label = 'TBC'
+    magnet_type_name = 'tb-corrector-ch'
+    model_version = 'model-03'
+    magnet_hardedge_length = 0.081  # [m]
+    nominal_KL_values = {
+    }
+    spec_main_intmpole_rms_error = 0.3  # [%]
+    spec_main_intmpole_max_value = -0.00125  # [T.m] (wiki-sirius)
+    spec_magnetic_center_x = 160.0  # [um]
+    spec_magnetic_center_y = 160.0  # [um]
+    spec_roll = 0.8  # [mrad]
+
+    spec_r0 = 17.5  # [mm]
+    # there is not multipole spec. using one based on prototype meas and
+    # dynapt testes.
+    spec_normal_sys_harms = _np.array([1, 2, 3, 4, 5, 6]) + 1
+    spec_normal_sys_mpoles = _np.array(
+        [-3.0e-4, +3.0e-3, +1.3e-4, -3.3e-3, +6.2e-4, -3.2e-3])
+    spec_normal_rms_harms = _np.array([])
+    spec_normal_rms_mpoles = _np.array([])
+    spec_skew_sys_harms = _np.array([0, ]) + 1
+    spec_skew_sys_mpoles = _np.array([0, ])
+    spec_skew_rms_harms = _np.array([])
+    spec_skew_rms_mpoles = _np.array([])
+
+
+class RotCoilMeas_TBCorV(RotCoilMeas_TB, RotCoilMeas_VCor):
+    """Rotation coil measurement of TB vertical correctors."""
+
+    excitation_type = 'CV'
+
+    # conv_mpoles_sign = -1.0  # meas with opposite current polarity!
+    magnet_type_label = 'TBC'
+    magnet_type_name = 'tb-corrector-cv'
+    model_version = 'model-03'
+    magnet_hardedge_length = 0.081  # [m]
+    nominal_KL_values = {
+    }
+    spec_main_intmpole_rms_error = 0.3  # [%]
+    spec_main_intmpole_max_value = -0.00125  # [T.m] (wiki-sirius)
+    spec_magnetic_center_x = 160.0  # [um]
+    spec_magnetic_center_y = 160.0  # [um]
+    spec_roll = 0.8  # [mrad]
+
+    spec_r0 = 17.5  # [mm]
+    # there is not multipole spec. using one based on prototype meas and
+    # dynapt testes.
+    spec_normal_sys_harms = _np.array([1, 2, 3, 4, 5, 6]) + 1
+    spec_normal_sys_mpoles = _np.array(
+        [-3.0e-4, +3.0e-3, +1.3e-4, -3.3e-3, +6.2e-4, -3.2e-3])
+    spec_normal_rms_harms = _np.array([])
+    spec_normal_rms_mpoles = _np.array([])
+    spec_skew_sys_harms = _np.array([0, ]) + 1
+    spec_skew_sys_mpoles = _np.array([0, ])
+    spec_skew_rms_harms = _np.array([])
+    spec_skew_rms_mpoles = _np.array([])
+
+
 class MagnetsAnalysis:
     """Measurements of a magnet type magnets."""
 
@@ -1272,7 +1367,10 @@ class MagnetsAnalysis:
             d = self._magnetsdata[self.serials[i]]
             c = d.get_currents(data_set)
             idx = d.get_max_current_index()
-            mpoles = d.get_intmpole_normal_avg(data_set, d.main_harmonic)
+            if self.tmpl.main_harmonic_type == 'normal':
+                mpoles = d.get_intmpole_normal_avg(data_set, d.main_harmonic)
+            else:
+                mpoles = d.get_intmpole_skew_avg(data_set, d.main_harmonic)
             self.max_mpole.append(mpoles[idx])
             diff_spec = 100*(mpoles[idx] - self.spec_max)/self.spec_max
             print(fmtstr.format(i, d.serial_number, idx, c[idx], diff_spec))
@@ -1392,7 +1490,10 @@ class MagnetsAnalysis:
             n = _np.array(d.get_intmpole_normal_avg(data_set, d.main_harmonic))
             s = _np.array(d.get_intmpole_skew_avg(data_set, d.main_harmonic))
             n, s = n[ind], s[ind]
-            r = s[curr_idx]/n[curr_idx]
+            if self.tmpl.main_harmonic_type == 'normal':
+                r = s[curr_idx]/n[curr_idx]
+            else:
+                r = n[curr_idx]/s[curr_idx]
             theta = _np.arctan(r)/d.main_harmonic
             rot_error.append(theta)
         rot_error = 1000*_np.array(rot_error)
@@ -1832,6 +1933,8 @@ class MagnetsAnalysis:
                   end='')
             c, _ = mdata.get_rampup(data_set)
             current = c[curr_idx]
+            if current == 0:
+                current = 1e-4  # eventual to avoid division by zero
             print('{:+.6e}   '.format(current), end='')
             ind = mdata.get_rampup_indices()
             idx = ind[curr_idx]
