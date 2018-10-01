@@ -1267,9 +1267,10 @@ class RotCoilMeas_TBCorH(RotCoilMeas_TB, RotCoilMeas_HCor):
     spec_r0 = 17.5  # [mm]
     # there is not multipole spec. using one based on prototype meas and
     # dynapt testes.
-    spec_normal_sys_harms = _np.array([1, 2, 3, 4, 5, 6]) + 1
+    spec_normal_sys_harms = _np.array([0, 1, 2, 4, 6, 8]) + 1
     spec_normal_sys_mpoles = _np.array(
-        [-3.0e-4, +3.0e-3, +1.3e-4, -3.3e-3, +6.2e-4, -3.2e-3])
+        [+1.0000e+00, -2.0131e-06, -3.8712e-01, -2.0729e-02,
+         -1.1201e-02, -9.0639e-03])  # from model-03
     spec_normal_rms_harms = _np.array([])
     spec_normal_rms_mpoles = _np.array([])
     spec_skew_sys_harms = _np.array([0, ]) + 1
@@ -1299,13 +1300,14 @@ class RotCoilMeas_TBCorV(RotCoilMeas_TB, RotCoilMeas_VCor):
     spec_r0 = 17.5  # [mm]
     # there is not multipole spec. using one based on prototype meas and
     # dynapt testes.
-    spec_normal_sys_harms = _np.array([1, 2, 3, 4, 5, 6]) + 1
-    spec_normal_sys_mpoles = _np.array(
-        [-3.0e-4, +3.0e-3, +1.3e-4, -3.3e-3, +6.2e-4, -3.2e-3])
+    spec_normal_sys_harms = _np.array([0, ]) + 1
+    spec_normal_sys_mpoles = _np.array([0, ])
     spec_normal_rms_harms = _np.array([])
     spec_normal_rms_mpoles = _np.array([])
-    spec_skew_sys_harms = _np.array([0, ]) + 1
-    spec_skew_sys_mpoles = _np.array([0, ])
+    spec_skew_sys_harms = _np.array([0, 1, 2, 4, 6, 8]) + 1
+    spec_skew_sys_mpoles = _np.array(
+        [+1.0000e+00, -1.0154e-06, +3.8711e-01, -1.1342e-02,
+         +6.6516e-03, +1.2167e-02])  # from model-03
     spec_skew_rms_harms = _np.array([])
     spec_skew_rms_mpoles = _np.array([])
 
