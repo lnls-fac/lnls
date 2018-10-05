@@ -715,6 +715,8 @@ class RotCoilMeas:
             return list(self._specialized_rampupind_BC())
         elif self.magnet_type_label == 'TBC':
             return list(self._specialized_rampupind_TBC())
+        elif self.magnet_type_label == 'TBQ':
+            return list(self._specialized_rampupind_TBQ())
         else:
             idx = self.get_max_current_index()
             return list(range(idx+1))
@@ -727,6 +729,8 @@ class RotCoilMeas:
             return self._specialized_rampdownind_BC()
         elif self.magnet_type_label == 'TBC':
             return self._specialized_rampdownind_TBC()
+        elif self.magnet_type_label == 'TBQ':
+            return self._specialized_rampdownind_TBQ()
         else:
             idx = self.get_max_current_index()
             return tuple(range(idx, self.size))
@@ -945,6 +949,12 @@ class RotCoilMeas:
 
     def _specialized_rampdownind_BC(self):
         return [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+
+    def _specialized_rampupind_TBQ(self):
+        return [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+
+    def _specialized_rampdownind_TBQ(self):
+        return [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
 
     def _specialized_rampupind_TBC(self):
         return [15, 16, 17, 18, 19, 20, 1, 2, 3, 4, 5]
@@ -1312,6 +1322,45 @@ class RotCoilMeas_TBCorV(RotCoilMeas_TB, RotCoilMeas_VCor):
     spec_skew_rms_mpoles = _np.array([])
 
 
+class RotCoilMeas_TBQuad(RotCoilMeas_TB, RotCoilMeas_Quad):
+    """Rotation coil measurement of TB quadrupole magnets."""
+
+    conv_mpoles_sign = +1.0  # meas with default current polarity!
+    magnet_type_label = 'TBQ'
+    magnet_type_name = 'tb-quadrupole'
+    model_version = 'model-01'
+    magnet_hardedge_length = 0.10  # [m]
+    nominal_KL_values = {
+        'TB-01:MA-QD1': _rutil.NOMINAL_STRENGTHS['TB-01:MA-QD1'],
+        'TB-01:MA-QF1': _rutil.NOMINAL_STRENGTHS['TB-01:MA-QF1'],
+        'TB-02:MA-QD2A': _rutil.NOMINAL_STRENGTHS['TB-02:MA-QD2A'],
+        'TB-02:MA-QF2A': _rutil.NOMINAL_STRENGTHS['TB-02:MA-QF2A'],
+        'TB-02:MA-QD2B': _rutil.NOMINAL_STRENGTHS['TB-02:MA-QD2B'],
+        'TB-02:MA-QF2B': _rutil.NOMINAL_STRENGTHS['TB-02:MA-QF2B'],
+        'TB-03:MA-QD3': _rutil.NOMINAL_STRENGTHS['TB-03:MA-QD3'],
+        'TB-03:MA-QF3': _rutil.NOMINAL_STRENGTHS['TB-03:MA-QF3'],
+        'TB-04:MA-QD4': _rutil.NOMINAL_STRENGTHS['TB-04:MA-QD4'],
+        'TB-04:MA-QF4': _rutil.NOMINAL_STRENGTHS['TB-04:MA-QF4'],
+    }
+    spec_main_intmpole_rms_error = 0.3  # [%]
+    spec_main_intmpole_max_value = 0.8  # [T] (spec wiki-sirius)
+    spec_magnetic_center_x = 160.0  # [um]
+    spec_magnetic_center_y = 160.0  # [um]
+    pwrsupply_polarity = 'bipolar'
+    spec_roll = 0.8  # [mrad]
+
+    spec_r0 = 17.5  # [mm]
+    spec_normal_sys_harms = _np.array([5, 9, 13]) + 1  # from model-01
+    spec_normal_sys_mpoles = _np.array([-4.7e-3, +1.2e-3, -4.0e-6])  # model-01
+    # booster quads
+    spec_normal_rms_harms = _np.array([2, 3, 4, 5, 6, 7, 8]) + 1
+    spec_normal_rms_mpoles = _np.array([7, 4, 4, 4, 4, 4, 4])*1e-4
+    spec_skew_sys_harms = _np.array([])
+    spec_skew_sys_mpoles = _np.array([])
+    spec_skew_rms_harms = _np.array([2, 3, 4, 5, 6, 7, 8]) + 1
+    spec_skew_rms_mpoles = _np.array([10, 5, 1, 1, 1, 1, 1])*1e-4
+
+
 class MagnetsAnalysis:
     """Measurements of a magnet type magnets."""
 
@@ -1551,7 +1600,7 @@ class MagnetsAnalysis:
                    'of Main Multipole'))
         plt.grid(True)
 
-    def rampup_excitation_curve_plot(self, data_set, plt):
+    def rampup_excitation_curve_plot(self, data_set, energy, plt):
         """."""
         c_min, c_max = 1, 1
         for i in range(len(self.serials)):
@@ -1573,7 +1622,7 @@ class MagnetsAnalysis:
             raise NotImplementedError()
 
         print('Nominal ' + sstr + ':')
-        nom = self.tmpl.get_nominal_main_intmpole_values(3.0)
+        nom = self.tmpl.get_nominal_main_intmpole_values(energy)
         for fam, v in nom.items():
             print('{:<16s}: {:+.6f}'.format(fam, v))
             plt.plot([c_min, c_max], [v, v], '--', color=[0, 0.5, 0])
