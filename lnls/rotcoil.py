@@ -847,6 +847,9 @@ class RotCoilMeas:
         elif self.magnet_type_label == 'BS' and \
                 self.serial_number in ('007', ):
             fs = self._specialized_data_sets_BS_007()
+        elif self.magnet_type_label == 'S15' and \
+                self.excitation_type == 'main_qs':
+            fs = self._specialized_data_sets_S15_SKEW()
         else:
             fs = _os.listdir(data_path)
         files = []
@@ -903,6 +906,9 @@ class RotCoilMeas:
 
     def _specialized_data_sets_Q20(self):
         # M1_ferromag is incomplete
+        return ['M1']
+
+    def _specialized_data_sets_S15_SKEW(self):
         return ['M1']
 
     def _specialized_data_sets_BC(self):

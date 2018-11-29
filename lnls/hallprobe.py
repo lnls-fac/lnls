@@ -9,6 +9,10 @@ import pickle as _pic
 import numpy as _np
 
 
+# TODO: funcionalities of this module are being moved to fieldmaptrack.hallsensor
+# eventually this module should be deleted and thus it should not be maintained or
+# used
+
 class Templates:
     """."""
 
@@ -338,7 +342,7 @@ class FMapAnalysisTB:
         self.files_read_results_rawfield()
         self.files_read_results_trajectory()
 
-    # --- auxilliary method ---
+    # --- auxiliary method ---
 
     def _create_rawfield_in(self):
         text = self._process_text(_rawfield)
@@ -520,7 +524,7 @@ class FMapAnalysisBO:
         cmd = 'cd ' + path + '; cat model.out >> analysis.txt'
         _os.system(cmd)
 
-    # --- auxilliary method ---
+    # --- auxiliary method ---
 
     def _create_rawfield_in(self):
         text = self._process_text(_rawfield)
