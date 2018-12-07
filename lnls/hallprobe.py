@@ -9,9 +9,10 @@ import pickle as _pic
 import numpy as _np
 
 
-# TODO: funcionalities of this module are being moved to fieldmaptrack.hallsensor
-# eventually this module should be deleted and thus it should not be maintained or
-# used
+# TODO: funcionalities of this module are being moved to
+# fieldmaptrack.hallsensor eventually this module should be deleted and thus
+# it should not be maintained or used
+
 
 class Templates:
     """."""
