@@ -827,7 +827,7 @@ class RotCoilMeas:
         mag_type_name = mag_type_name.replace('corrector-ch', 'correctors')
         mag_type_name = mag_type_name.replace('corrector-cv', 'correctors')
         data_path = \
-            self.lnls_ima_path + '/' + mag_type_name + '/' + \
+            self.lnls_ima_path + '/repos/' + mag_type_name + '/' + \
             self.model_version + '/measurement/magnetic/rotcoil/' + \
             self.family_folder + \
             self.magnet_type_label + '-' + \
