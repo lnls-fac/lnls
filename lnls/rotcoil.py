@@ -238,6 +238,7 @@ class RotCoilMeas:
         self.serial_number = serial_number
         self._read_rotcoil_data()
         self._calc_magnetic_center()
+        self._calc_rotation_error()
 
     @property
     def data_sets(self):
@@ -735,6 +736,21 @@ class RotCoilMeas:
             idx = self.get_max_current_index()
             return tuple(range(idx, self.size))
 
+    def _calc_rotation_error(self):
+        """."""
+        for data_set in self._rotcoildata:
+            for d in self._rotcoildata[data_set]:
+                idx_main = d.harmonics.index(self.main_harmonic)
+                n = d.intmpole_normal_avg[idx_main]
+                s = d.intmpole_skew_avg[idx_main]
+                if self.main_harmonic_type == 'normal':
+                    r = s/n
+                else:
+                    r = n/s
+                # print(self.main_harmonic)
+                theta = _np.arctan(r)/self.main_harmonic
+                d.rotation_error = 1000*theta
+
     def _calc_magnetic_center(self):
         # B = D + Q*z + S*z**2
         #
@@ -1063,7 +1079,8 @@ class RotCoilMeas_SIQuadQ30(RotCoilMeas_SI, RotCoilMeas_Quad):
 class RotCoilMeas_SIQuadQ20(RotCoilMeas_SI, RotCoilMeas_Quad):
     """Rotation coil measurement of SI quadrupole magnets Q20."""
 
-    family_folder = 'family_1/'
+    # family_folder = 'family_1/'
+    family_folder = '/'
 
     conv_mpoles_sign = +1.0  # meas with default current polarity!
     magnet_type_label = 'Q20'
