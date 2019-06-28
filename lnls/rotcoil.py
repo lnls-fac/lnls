@@ -1114,7 +1114,7 @@ class RotCoilMeas_SIQuadQ20(RotCoilMeas_SI, RotCoilMeas_Quad):
 class RotCoilMeas_SISextS15(RotCoilMeas_SI, RotCoilMeas_Sext):
     """Rotation coil measurement of SI sextupole S15."""
 
-    family_folder = 'family_1/'
+    family_folder = 'sextupoles-main/'
 
     conv_mpoles_sign = +1.0  # meas with default current polarity!
     magnet_type_label = 'S15'
