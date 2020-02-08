@@ -162,7 +162,7 @@ class RotCoilMeas:
 
     excitation_type = 'main'
     family_folder = ''
-    lnls_ima_path = _envars.folder_lnls_ima
+    lnls_ima_path = _envars.DIR_LNLS_IMAS
 
     _excdata_obs = (
         '# POLARITY TABLE',
