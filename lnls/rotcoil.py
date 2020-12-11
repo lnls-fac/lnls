@@ -233,9 +233,10 @@ class RotCoilMeas:
         '#       it is split as a list of strings.',
         '#    b) otherwise the line is ignored as a comment line.',)
 
-    def __init__(self, serial_number):
+    def __init__(self, serial_number, curr_main_coil=None):
         """Init."""
         self.serial_number = serial_number
+        self.curr_main_coil = curr_main_coil
         self._read_rotcoil_data()
         self._calc_magnetic_center()
         self._calc_rotation_error()
@@ -268,24 +269,48 @@ class RotCoilMeas:
         max_c_i = []
         for data_set in self.data_sets:
             # data = self._rotcoildata[data_set]
-            currents = self.get_currents(data_set)
+            if 'trim' in self.magnet_type_name:
+                currents = self.get_trim_currents(data_set)
+                # print(currents)
+            else:
+                currents = self.get_currents(data_set)
             max_c = max(currents)
             # print(self.serial_number, data_set, max_c)
             max_c_i.append(currents.index(max_c))
         umaxci = _np.unique(max_c_i)
-        # print(umaxci)
         if len(umaxci) > 1:
             raise ValueError('Inconsistent current values in data sets')
         return umaxci[0]
 
+    def get_min_current_index(self):
+        """Return min current index."""
+        min_c_i = []
+        for data_set in self.data_sets:
+            if 'trim' in self.magnet_type_name:
+                currents = self.get_trim_currents(data_set)
+            else:
+                currents = self.get_currents(data_set)
+            min_c = min(currents)
+            min_c_i.append(currents.index(min_c))
+        uminci = _np.unique(min_c_i)
+        if len(uminci) > 1:
+            raise ValueError('Inconsistent current values in data sets')
+        return uminci[0]
+
     def get_rampup(self, data_set):
         """Rampup data."""
-        c = self.get_currents(data_set)
+        if 'trim' in self.magnet_type_name:
+            c = self.get_trim_currents(data_set)
+        else:
+            c = self.get_currents(data_set)
         if self.main_harmonic_type == 'normal':
             gl = self.get_intmpole_normal_avg(data_set, self.main_harmonic)
         else:
             gl = self.get_intmpole_skew_avg(data_set, self.main_harmonic)
-        ind = self.get_rampup_indices()
+        if 'trim' in self.magnet_type_name:
+            ind = self.get_ramp_indices()
+        else:
+            ind = self.get_rampup_indices()
         return [c[i] for i in ind], [gl[i] for i in ind]
 
     def get_rampdown_hysteresis(self, data_set):
@@ -314,6 +339,10 @@ class RotCoilMeas:
         """Return currents of a data set."""
         return self.get_currents_avg(data_set)
 
+    def get_trim_currents(self, data_set):
+        """Return currents of a data set."""
+        return self.get_trim_currents_avg(data_set)
+
     def get_currents_avg(self, data_set):
         """Return currents of a data set."""
         data = self._rotcoildata[data_set]
@@ -323,6 +352,16 @@ class RotCoilMeas:
         """Return currents of a data set."""
         data = self._rotcoildata[data_set]
         return [d.main_coil_current_std for d in data]
+
+    def get_trim_currents_avg(self, data_set):
+        """Return currents of a data set."""
+        data = self._rotcoildata[data_set]
+        return [d.trim_coil_current_avg for d in data]
+
+    def get_trim_currents_std(self, data_set):
+        """Return currents of a data set."""
+        data = self._rotcoildata[data_set]
+        return [d.trim_coil_current_std for d in data]
 
     def get_intmpole_normal_avg(self, data_set, n):
         """Return average integrated normal multipole."""
@@ -722,6 +761,13 @@ class RotCoilMeas:
             idx = self.get_max_current_index()
             return list(range(idx+1))
 
+    def get_ramp_indices(self):
+        for data_set in self.data_sets:
+            if 'trim' in self.magnet_type_name:
+                currents = self.get_trim_currents(data_set)
+        idx = len(currents)
+        return list(range(idx))
+
     def get_rampdown_indices(self):
         """."""
         if self.magnet_type_label == 'Q30' and self.serial_number == '011':
@@ -842,12 +888,24 @@ class RotCoilMeas:
         mag_type_name = mag_type_name.replace('sextupole', 'sextupoles')
         mag_type_name = mag_type_name.replace('corrector-ch', 'correctors')
         mag_type_name = mag_type_name.replace('corrector-cv', 'correctors')
+        after_recal = ''
+        trim_path = ''
+        main_coil = ''
+        if 'trim' in mag_type_name:
+            after_recal = 'after_recalibration/'
+            self.excitation_type = 'trim/'
+            mag_type_name = mag_type_name[:-5]
+            main_coil = 'main_'
+            main_coil += str(self.curr_main_coil)
+            main_coil += 'A/'
         data_path = \
             self.lnls_ima_path + '/repos/' + mag_type_name + '/' + \
             self.model_version + '/measurement/magnetic/rotcoil/' + \
             self.family_folder + \
+            after_recal + \
             self.magnet_type_label + '-' + \
-            self.serial_number + '/' + self.excitation_type
+            self.serial_number + '/' + self.excitation_type + \
+            main_coil
         return data_path
 
     def _get_data_sets(self):
@@ -1024,11 +1082,11 @@ class RotCoilMeas_SIQuadQ14(RotCoilMeas_SI, RotCoilMeas_Quad):
     model_version = 'model-04'
     magnet_hardedge_length = 0.14  # [m]
     nominal_KL_values = {
-        'SI-Fam:MA-QDA': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-QDA'],
-        'SI-Fam:MA-QDB1': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-QDB1'],
-        'SI-Fam:MA-QDB2': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-QDB2'],
-        'SI-Fam:MA-QDP1': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-QDP1'],
-        'SI-Fam:MA-QDP2': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-QDP2'],
+        'SI-Fam:PS-QDA': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-QDA'],
+        'SI-Fam:PS-QDB1': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-QDB1'],
+        'SI-Fam:PS-QDB2': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-QDB2'],
+        'SI-Fam:PS-QDP1': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-QDP1'],
+        'SI-Fam:PS-QDP2': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-QDP2'],
     }
     spec_main_intmpole_rms_error = 0.05  # [%]
     spec_main_intmpole_max_value = 5.2116053477732  # [T] (spec in wiki-sirius)
@@ -1056,8 +1114,8 @@ class RotCoilMeas_SIQuadQ30(RotCoilMeas_SI, RotCoilMeas_Quad):
     model_version = 'model-06'
     magnet_hardedge_length = 0.30  # [m]
     nominal_KL_values = {
-        'SI-Fam:MA-QFB': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-QFB'],
-        'SI-Fam:MA-QFP': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-QFP'],
+        'SI-Fam:PS-QFB': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-QFB'],
+        'SI-Fam:PS-QFP': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-QFP'],
     }
     spec_main_intmpole_rms_error = 0.05  # [%]
     spec_main_intmpole_max_value = 13.62942873208  # [T] (spec in wiki-sirius)
@@ -1088,11 +1146,11 @@ class RotCoilMeas_SIQuadQ20(RotCoilMeas_SI, RotCoilMeas_Quad):
     model_version = 'model-05'
     magnet_hardedge_length = 0.20  # [m]
     nominal_KL_values = {
-        'SI-Fam:MA-QFA': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-QFA'],
-        'SI-Fam:MA-Q1': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-Q1'],
-        'SI-Fam:MA-Q2': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-Q2'],
-        'SI-Fam:MA-Q3': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-Q3'],
-        'SI-Fam:MA-Q4': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-Q4'],
+        'SI-Fam:PS-QFA': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-QFA'],
+        'SI-Fam:PS-Q1': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-Q1'],
+        'SI-Fam:PS-Q2': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-Q2'],
+        'SI-Fam:PS-Q3': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-Q3'],
+        'SI-Fam:PS-Q4': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-Q4'],
     }
     spec_main_intmpole_rms_error = 0.05  # [%]
     spec_main_intmpole_max_value = 9.0862858213864  # [T] (spec in wiki-sirius)
@@ -1111,6 +1169,24 @@ class RotCoilMeas_SIQuadQ20(RotCoilMeas_SI, RotCoilMeas_Quad):
     spec_skew_rms_mpoles = _np.array([0.5, 0.5, 0.5, 0.5])*1e-4
 
 
+class RotCoilMeas_SIQuadQ14Trim(RotCoilMeas_SIQuadQ14):
+    """Rotation coil measurement of SI quadrupole magnets Q14."""
+
+    magnet_type_name = 'si-quadrupole-q14-trim'
+
+
+class RotCoilMeas_SIQuadQ20Trim(RotCoilMeas_SIQuadQ20):
+    """Rotation coil measurement of SI quadrupole magnets Q20."""
+
+    magnet_type_name = 'si-quadrupole-q20-trim'
+
+
+class RotCoilMeas_SIQuadQ30Trim(RotCoilMeas_SIQuadQ30):
+    """Rotation coil measurement of SI quadrupole magnets Q30."""
+
+    magnet_type_name = 'si-quadrupole-q30-trim'
+
+
 class RotCoilMeas_SISextS15(RotCoilMeas_SI, RotCoilMeas_Sext):
     """Rotation coil measurement of SI sextupole S15."""
 
@@ -1122,28 +1198,28 @@ class RotCoilMeas_SISextS15(RotCoilMeas_SI, RotCoilMeas_Sext):
     model_version = 'model-07'
     magnet_hardedge_length = 0.15  # [m]
     nominal_KL_values = {
-        'SI-Fam:MA-SFA0': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFA0'],
-        'SI-Fam:MA-SFB0': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFB0'],
-        'SI-Fam:MA-SFP0': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFP0'],
-        'SI-Fam:MA-SFA1': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFA1'],
-        'SI-Fam:MA-SFB1': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFB1'],
-        'SI-Fam:MA-SFP1': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFP1'],
-        'SI-Fam:MA-SFA2': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFA2'],
-        'SI-Fam:MA-SFB2': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFB2'],
-        'SI-Fam:MA-SFP2': _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SFP2'],
+        'SI-Fam:PS-SFA0': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SFA0'],
+        'SI-Fam:PS-SFB0': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SFB0'],
+        'SI-Fam:PS-SFP0': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SFP0'],
+        'SI-Fam:PS-SFA1': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SFA1'],
+        'SI-Fam:PS-SFB1': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SFB1'],
+        'SI-Fam:PS-SFP1': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SFP1'],
+        'SI-Fam:PS-SFA2': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SFA2'],
+        'SI-Fam:PS-SFB2': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SFB2'],
+        'SI-Fam:PS-SFP2': _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SFP2'],
         # using nominal integrated strengths
-        'SI-Fam:MA-SDA0': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDA0'],
-        'SI-Fam:MA-SDB0': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDB0'],
-        'SI-Fam:MA-SDP0': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDP0'],
-        'SI-Fam:MA-SDA1': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDA1'],
-        'SI-Fam:MA-SDB1': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDB1'],
-        'SI-Fam:MA-SDP1': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDP1'],
-        'SI-Fam:MA-SDA2': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDA2'],
-        'SI-Fam:MA-SDB2': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDB2'],
-        'SI-Fam:MA-SDP2': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDP2'],
-        'SI-Fam:MA-SDA3': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDA3'],
-        'SI-Fam:MA-SDB3': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDB3'],
-        'SI-Fam:MA-SDP3': - _rutil.NOMINAL_STRENGTHS['SI-Fam:MA-SDP3'],
+        'SI-Fam:PS-SDA0': - _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SDA0'],
+        'SI-Fam:PS-SDB0': - _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SDB0'],
+        'SI-Fam:PS-SDP0': - _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SDP0'],
+        'SI-Fam:PS-SDA1': - _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SDA1'],
+        'SI-Fam:PS-SDB1': - _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SDB1'],
+        'SI-Fam:PS-SDP1': - _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SDP1'],
+        'SI-Fam:PS-SDA2': - _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SDA2'],
+        'SI-Fam:PS-SDB2': - _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SDB2'],
+        'SI-Fam:PS-SDP2': - _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SDP2'],
+        'SI-Fam:PS-SDA3': - _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SDA3'],
+        'SI-Fam:PS-SDB3': - _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SDB3'],
+        'SI-Fam:PS-SDP3': - _rutil.NOMINAL_STRENGTHS['SI-Fam:PS-SDP3'],
     }
     spec_main_intmpole_rms_error = 0.05  # [%]
     spec_main_intmpole_max_value = 360.24921758801  # [T/m] (spec in wiki)
@@ -1171,8 +1247,8 @@ class RotCoilMeas_BOSext(RotCoilMeas_BO, RotCoilMeas_Sext):
     model_version = 'model-03'
     magnet_hardedge_length = 0.105  # [m]
     nominal_KL_values = {
-        'BO-Fam:MA-SF': _rutil.NOMINAL_STRENGTHS['BO-Fam:MA-SF'],
-        'BO-Fam:MA-SD': _rutil.NOMINAL_STRENGTHS['BO-Fam:MA-SD'],
+        'BO-Fam:PS-SF': _rutil.NOMINAL_STRENGTHS['BO-Fam:PS-SF'],
+        'BO-Fam:PS-SD': _rutil.NOMINAL_STRENGTHS['BO-Fam:PS-SD'],
     }
     spec_main_intmpole_rms_error = 0.3  # [%]
     spec_main_intmpole_max_value = 21.014537692633  # [T/m] (spec wiki-sirius)
@@ -1201,7 +1277,7 @@ class RotCoilMeas_BOQuadQD(RotCoilMeas_BO, RotCoilMeas_Quad):
     model_version = 'model-02'
     magnet_hardedge_length = 0.10  # [m]
     nominal_KL_values = {
-        'BO-Fam:MA-QD': _rutil.NOMINAL_STRENGTHS['BO-Fam:MA-QD'],
+        'BO-Fam:PS-QD': _rutil.NOMINAL_STRENGTHS['BO-Fam:PS-QD'],
     }
     spec_main_intmpole_rms_error = 0.3  # [%]
     spec_main_intmpole_max_value = 0.52536344231582  # [T] (spec wiki-sirius)
@@ -1230,7 +1306,7 @@ class RotCoilMeas_BOQuadQF(RotCoilMeas_BO, RotCoilMeas_Quad):
     model_version = 'model-06'
     magnet_hardedge_length = 0.228  # [m]
     nominal_KL_values = {
-        'BO-Fam:MA-QF': _rutil.NOMINAL_STRENGTHS['BO-Fam:MA-QF'],
+        'BO-Fam:PS-QF': _rutil.NOMINAL_STRENGTHS['BO-Fam:PS-QF'],
     }
     spec_main_intmpole_rms_error = 0.3  # [%]
     spec_main_intmpole_max_value = 4.2554438827581  # [T] (spec wiki-sirius)
@@ -1354,17 +1430,19 @@ class RotCoilMeas_TBQuad(RotCoilMeas_TB, RotCoilMeas_Quad):
     model_version = 'model-01'
     magnet_hardedge_length = 0.10  # [m]
     nominal_KL_values = {
-        'TB-01:MA-QD1': _rutil.NOMINAL_STRENGTHS['TB-01:MA-QD1'],
-        'TB-01:MA-QF1': _rutil.NOMINAL_STRENGTHS['TB-01:MA-QF1'],
-        'TB-02:MA-QD2A': _rutil.NOMINAL_STRENGTHS['TB-02:MA-QD2A'],
-        'TB-02:MA-QF2A': _rutil.NOMINAL_STRENGTHS['TB-02:MA-QF2A'],
-        'TB-02:MA-QD2B': _rutil.NOMINAL_STRENGTHS['TB-02:MA-QD2B'],
-        'TB-02:MA-QF2B': _rutil.NOMINAL_STRENGTHS['TB-02:MA-QF2B'],
-        'TB-03:MA-QD3': _rutil.NOMINAL_STRENGTHS['TB-03:MA-QD3'],
-        'TB-03:MA-QF3': _rutil.NOMINAL_STRENGTHS['TB-03:MA-QF3'],
-        'TB-04:MA-QD4': _rutil.NOMINAL_STRENGTHS['TB-04:MA-QD4'],
-        'TB-04:MA-QF4': _rutil.NOMINAL_STRENGTHS['TB-04:MA-QF4'],
-    }
+            }
+    # nominal_KL_values = {
+    #     'TB-01:PS-QD1': _rutil.NOMINAL_STRENGTHS['TB-01:PS-QD1'],
+    #     'TB-01:PS-QF1': _rutil.NOMINAL_STRENGTHS['TB-01:PS-QF1'],
+    #     'TB-02:PS-QD2A': _rutil.NOMINAL_STRENGTHS['TB-02:PS-QD2A'],
+    #     'TB-02:PS-QF2A': _rutil.NOMINAL_STRENGTHS['TB-02:PS-QF2A'],
+    #     'TB-02:PS-QD2B': _rutil.NOMINAL_STRENGTHS['TB-02:PS-QD2B'],
+    #     'TB-02:PS-QF2B': _rutil.NOMINAL_STRENGTHS['TB-02:PS-QF2B'],
+    #     'TB-03:PS-QD3': _rutil.NOMINAL_STRENGTHS['TB-03:PS-QD3'],
+    #     'TB-03:PS-QF3': _rutil.NOMINAL_STRENGTHS['TB-03:PS-QF3'],
+    #     'TB-04:PS-QD4': _rutil.NOMINAL_STRENGTHS['TB-04:PS-QD4'],
+    #     'TB-04:PS-QF4': _rutil.NOMINAL_STRENGTHS['TB-04:PS-QF4'],
+    # }
     spec_main_intmpole_rms_error = 0.3  # [%]
     spec_main_intmpole_max_value = 0.8  # [T] (spec wiki-sirius)
     spec_magnetic_center_x = 160.0  # [um]
@@ -1387,22 +1465,24 @@ class RotCoilMeas_TBQuad(RotCoilMeas_TB, RotCoilMeas_Quad):
 class MagnetsAnalysis:
     """Measurements of a magnet type magnets."""
 
-    def __init__(self, rotcoilmeas_cls, serial_numbers):
+    def __init__(self, rotcoilmeas_cls, serial_numbers, curr_main_coil=None):
         """Init."""
+        # curr_main_coil = None
         if isinstance(serial_numbers, dict):
             # serial_numbers is a dict (for various magnet families)
             self.serials = []
             for fam, sn in serial_numbers.items():
                 rotcoilmeas_cls.family_folder = fam
                 for s in sn:
-                    self._magnetsdata[s] = rotcoilmeas_cls(s)
+                    self._magnetsdata[s] = rotcoilmeas_cls(s, curr_main_coil)
                 self.serials.extend(sn)
         else:
             # serial_numbers is a list (for single magnet family)
             self.serials = serial_numbers
+            self.curr_main_coil = curr_main_coil
             self._magnetsdata = dict()
             for s in serial_numbers:
-                self._magnetsdata[s] = rotcoilmeas_cls(s)
+                self._magnetsdata[s] = rotcoilmeas_cls(s, curr_main_coil)
         self._average = dict()
 
     def init(self):
@@ -2010,7 +2090,10 @@ class MagnetsAnalysis:
             if current == 0:
                 current = 1e-4  # eventual to avoid division by zero
             print('{:+.6e}   '.format(current), end='')
-            ind = mdata.get_rampup_indices()
+            if 'trim' in self.tmpl.magnet_type_name:
+                ind = mdata.get_ramp_indices()
+            else:
+                ind = mdata.get_rampup_indices()
             idx = ind[curr_idx]
             nmpoles = mdata.get_intmpole_normal_avg_current(data_set, idx)
             nmpoles = _np.array(nmpoles) / current
