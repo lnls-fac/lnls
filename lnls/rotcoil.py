@@ -162,8 +162,7 @@ class RotCoilMeas:
 
     excitation_type = 'main'
     family_folder = ''
-    # lnls_ima_path = _envars.DIR_LNLS_IMAS
-    lnls_ima_path = '/home/murilo'
+    lnls_ima_path = _envars.DIR_LNLS_IMAS
 
     _excdata_obs = (
         '# POLARITY TABLE',
@@ -287,14 +286,11 @@ class RotCoilMeas:
         """Return min current index."""
         min_c_i = []
         for data_set in self.data_sets:
-            # data = self._rotcoildata[data_set]
             if 'trim' in self.magnet_type_name:
                 currents = self.get_trim_currents(data_set)
-                # print(currents)
             else:
                 currents = self.get_currents(data_set)
             min_c = min(currents)
-            # print(self.serial_number, data_set, max_c)
             min_c_i.append(currents.index(min_c))
         uminci = _np.unique(min_c_i)
         if len(uminci) > 1:
