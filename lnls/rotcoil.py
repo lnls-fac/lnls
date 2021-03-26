@@ -162,7 +162,7 @@ class RotCoilMeas:
 
     excitation_type = 'main'
     family_folder = ''
-    lnls_ima_path = _envars.DIR_LNLS_IMAS
+    lnls_ima_path = _envars.DIR_IMAS
 
     _excdata_obs = (
         '# POLARITY TABLE',
@@ -339,6 +339,10 @@ class RotCoilMeas:
         """Return currents of a data set."""
         return self.get_currents_avg(data_set)
 
+    def get_qs_currents(self, data_set):
+        """Return currents of a data set."""
+        return self.get_qs_currents_avg(data_set)
+
     def get_trim_currents(self, data_set):
         """Return currents of a data set."""
         return self.get_trim_currents_avg(data_set)
@@ -352,6 +356,16 @@ class RotCoilMeas:
         """Return currents of a data set."""
         data = self._rotcoildata[data_set]
         return [d.main_coil_current_std for d in data]
+
+    def get_qs_currents_avg(self, data_set):
+        """Return currents of a data set."""
+        data = self._rotcoildata[data_set]
+        return [d.qs_coil_current_avg for d in data]
+
+    def get_qs_currents_std(self, data_set):
+        """Return currents of a data set."""
+        data = self._rotcoildata[data_set]
+        return [d.qs_coil_current_std for d in data]
 
     def get_trim_currents_avg(self, data_set):
         """Return currents of a data set."""
@@ -407,6 +421,30 @@ class RotCoilMeas:
         """List with vertical position of magnetic center."""
         data = self._rotcoildata[data_set]
         y = [d.magnetic_center_y for d in data]
+        return y
+
+    def get_magnetic_center_dip1_x(self, data_set):
+        """List with horizontal position of magnetic center."""
+        data = self._rotcoildata[data_set]
+        x = [d.magnetic_center_dip1_x for d in data]
+        return x
+
+    def get_magnetic_center_dip1_y(self, data_set):
+        """List with vertical position of magnetic center."""
+        data = self._rotcoildata[data_set]
+        y = [d.magnetic_center_dip1_y for d in data]
+        return y
+
+    def get_magnetic_center_dip2_x(self, data_set):
+        """List with horizontal position of magnetic center."""
+        data = self._rotcoildata[data_set]
+        x = [d.magnetic_center_dip2_x for d in data]
+        return x
+
+    def get_magnetic_center_dip2_y(self, data_set):
+        """List with vertical position of magnetic center."""
+        data = self._rotcoildata[data_set]
+        y = [d.magnetic_center_dip2_y for d in data]
         return y
 
     def rampup_curr_2_main_mpole(self, data_set, current):
@@ -827,6 +865,12 @@ class RotCoilMeas:
                     b2 = d.intmpole_normal_avg[idx_sext]
                     S = b2 + a2 * 1j
                     z0 = -Q/S/2.0
+                    z0d1 = (-Q + _np.sqrt(Q*Q - 4.0*D*S))/S/2.0
+                    d.magnetic_center_dip1_x = 1e6 * z0d1.real
+                    d.magnetic_center_dip1_y = 1e6 * z0d1.imag
+                    z0d2 = (-Q - _np.sqrt(Q*Q - 4.0*D*S))/S/2.0
+                    d.magnetic_center_dip2_x = 1e6 * z0d2.real
+                    d.magnetic_center_dip2_y = 1e6 * z0d2.imag
                     # B = D - S*z0**2
                     # d.magnetic_center_intbx = B.imag
                     # d.magnetic_center_intby = B.real
@@ -983,7 +1027,7 @@ class RotCoilMeas:
         return ['M1']
 
     def _specialized_data_sets_S15_SKEW(self):
-        return ['M1']
+        return ['M1', 'M2', 'M3']
 
     def _specialized_data_sets_BC(self):
         return ['M1']
@@ -1236,6 +1280,12 @@ class RotCoilMeas_SISextS15(RotCoilMeas_SI, RotCoilMeas_Sext):
     spec_skew_sys_mpoles = _np.array([])
     spec_skew_rms_harms = _np.array([3, 4, 5, 6]) + 1
     spec_skew_rms_mpoles = _np.array([5.0, 5.0, 0.5, 0.5])*1e-4
+
+
+class RotCoilMeas_SISextS15QS(RotCoilMeas_SISextS15):
+    """Rotation coil measurement of SI quadrupole magnets Q30."""
+
+    excitation_type = 'main_qs'
 
 
 class RotCoilMeas_BOSext(RotCoilMeas_BO, RotCoilMeas_Sext):
