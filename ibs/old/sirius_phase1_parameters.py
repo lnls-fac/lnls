@@ -11,7 +11,7 @@ parameters = {
     # -- lattice --
     'C':   518.396,  # lattice circumference [m]
 
-    # -- vaccum chamber pressure --
+    # -- vacuum chamber pressure --
     'Pmed':    1.0,  # average pressure in the machine [nTorr]
 
     # -- RF cavities (6 Dampy Cavities) --
