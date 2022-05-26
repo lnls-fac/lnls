@@ -8,9 +8,22 @@ from lnls.rotcoil import RotCoilMeas_SIFCH
 RotCoilMeas_SIFCH.lnls_ima_path = '/home/ximenes/repos-dev/'
 RotCoilMeas_SIFCH.excitation_type = 'FC1'
 
+# NOTE: these are fast correctors with slow QS coils installed previously
+installation_fc1_previous = {
+    '030': '01C2', '066': '02C2',
+    '065': '03C2', '078': '04C2',
+    '079': '05C2', '070': '06C2',
+    '063': '07C2', '010': '08C2',
+    '074': '09C2', '068': '10C2',
+    '032': '11C2', '052': '12C2',
+    '061': '13C2', '064': '14C2',
+    '038': '15C2', '021': '16C2',
+    '048': '17C2', '054': '18C2',
+    '071': '19C2', '009': '20C2',
+}
 
 # NOTE: these dicts have information on serial numbers of all 
-# 
+# recently installed fast correctors
 installation_fc1 = {
     '081': '01M1', '040': '11M1',
     '075': '01M2', '051': '11M2',
@@ -196,6 +209,7 @@ def create_excdata_file(fc_dict, type, sign):
 
 def run():
 
+    installation_fc1.update(installation_fc1_previous)
     # plot_excitation_curves(fc_dict=installation_fc1, exc_type='ch', plot_type='ch')
     # plot_excitation_curves(fc_dict=installation_fc1, exc_type='ch', plot_type='cv')
     # plot_excitation_curves(fc_dict=installation_fc1, exc_type='cv', plot_type='cv')
