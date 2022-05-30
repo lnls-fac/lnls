@@ -3,7 +3,6 @@
 import os as _os
 import numpy as _np
 
-from siriuspy import envars as _envars
 from siriuspy import util as _util
 from siriuspy.magnet import util as _mutil
 from siriuspy.ramp import util as _rutil
@@ -15,6 +14,7 @@ class RotCoilData:
 
     _del = ('(C)', '(rps)', '(rps^2)', '(A)', '(V)', '(ohm)', '(m)', '(um)')
     _params = (
+        'id',
         'file',
         'date',
         'hour',
@@ -60,6 +60,9 @@ class RotCoilData:
     def __init__(self, path, conv_mpoles_sign):
         """Init."""
         self.path = path
+        self.harmonics = None
+        self.intmpole_normal_avg = None
+        self.intmpole_skew_avg = None
         self._read_data(conv_mpoles_sign)
 
     def _read_data(self, conv_mpoles_sign):
@@ -162,7 +165,7 @@ class RotCoilMeas:
 
     excitation_type = 'main'
     family_folder = ''
-    lnls_ima_path = _envars.DIR_LNLS_IMAS
+    lnls_ima_path = None  # to be set before using classes
 
     _excdata_obs = (
         '# POLARITY TABLE',
@@ -899,7 +902,7 @@ class RotCoilMeas:
             main_coil += str(self.curr_main_coil)
             main_coil += 'A/'
         data_path = \
-            self.lnls_ima_path + '/repos/' + mag_type_name + '/' + \
+            self.lnls_ima_path + mag_type_name + '/' + \
             self.model_version + '/measurement/magnetic/rotcoil/' + \
             self.family_folder + \
             after_recal + \
@@ -1353,6 +1356,15 @@ class RotCoilMeas_BOCorH(RotCoilMeas_BO, RotCoilMeas_HCor):
     spec_skew_sys_mpoles = _np.array([0, ])
     spec_skew_rms_harms = _np.array([])
     spec_skew_rms_mpoles = _np.array([])
+
+
+class RotCoilMeas_SIFCH(RotCoilMeas_SI, RotCoilMeas_HCor):
+    """Rotation coil measurement of SI fast horizontal correctors."""
+
+    conv_mpoles_sign = -1.0  # meas with opposite current polarity!
+    magnet_type_label = 'FC'
+    magnet_type_name = 'si-fast-correctors'
+    model_version = 'model-06'
 
 
 class RotCoilMeas_TBCorH(RotCoilMeas_TB, RotCoilMeas_HCor):
