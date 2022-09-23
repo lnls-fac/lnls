@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 from lnls.rotcoil import RotCoilMeas_SIFCH
 
 RotCoilMeas_SIFCH.lnls_ima_path = '/home/ximenes/repos-dev/'
-RotCoilMeas_SIFCH.excitation_type = 'FC1'
+# RotCoilMeas_SIFCH.excitation_type = 'FC1'
+# RotCoilMeas_SIFCH.excitation_type = 'FC2'
+RotCoilMeas_SIFCH.excitation_type = 'NOT_DEFINED'
 
 # NOTE: these are fast correctors with slow QS coils installed previously
 installation_fc1_previous = {
@@ -123,6 +125,7 @@ def plot_excitation_curves(fc_dict, exc_type, plot_type):
         mag_type = 'FC1'
     else:
         mag_type = 'FC2'
+    RotCoilMeas_SIFCH.excitation_type = mag_type
     serials = list(fc_dict.keys())
     for serial in serials:
         currs, harmonics, norms, skews, _ = get_rotcoil_multipoles(exc_type, serial)
@@ -150,6 +153,7 @@ def plot_average_excitation_curve(fc_dict, exc_type, plot_type):
         mag_type = 'FC1'
     else:
         mag_type = 'FC2'
+    RotCoilMeas_SIFCH.excitation_type = mag_type
     currs_fit = np.linspace(0,1.5,10)
     currs_fit, norms_fit, skews_fit, all_currs, all_norms, all_skews, harmonics = calc_avg_multipoles(exc_type, serials, currs_fit)
     conv = 1e6/10  # T.m -> urad # 3 GeV
@@ -178,6 +182,7 @@ def create_excdata_file(fc_dict, type, sign):
         mag_type = 'FC1'
     else:
         mag_type = 'FC2'
+    RotCoilMeas_SIFCH.excitation_type = mag_type
     currs_fit = np.linspace(0, 1.0, 5)
     currs_fit, norms_fit, skews_fit, all_currs, all_norms, all_skews, harmonics = calc_avg_multipoles(type, serials, currs_fit, order=2)
     norms_fit *= sign
