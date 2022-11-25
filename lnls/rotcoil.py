@@ -185,8 +185,8 @@ class RotCoilMeas:
          ' -1.0        | I > 0'),
         ('# quadrupole (defocusing) | KL    < 0      | D1NL > 0    |'
          ' -1.0        | I > 0'),
-        ('# quadrupole (skew)       | KL    > 0      | D1SL > 0    |'
-         ' +1.0        | I > 0'),
+        ('# quadrupole (skew)       | KL    < 0      | D1SL > 0    |'
+         ' -1.0        | I > 0'),
         ('# sextupole  (focusing)   | SL    > 0      | D2NL < 0    |'
          ' -1.0        | I > 0'),
         ('# sextupole  (defocusing) | SL    < 0      | D2NL > 0    |'
@@ -204,6 +204,7 @@ class RotCoilMeas:
         '# HKick := ConvSign * BYL / abs(Brho)',
         '# VKick := ConvSign * BXL / abs(Brho)',
         '# KL    := ConvSign * D1NL / abs(Brho)',
+        '# KL    := ConvSign * D1SL / abs(Brho)',
         '# SL    := ConvSign * D2NL / abs(Brho)',
         '#',
         '# Obs:',
@@ -684,7 +685,8 @@ class RotCoilMeas:
             currents,
             mpoles_n,
             mpoles_s,
-            filename):
+            filename,
+            comments=None):
         """Return excitation data text."""
         # harmonics = ' '.join([str(h) for h in sorted(harmonics)])
         # main_harmonic = (main_harmonic-1, main_harmonic_type)
@@ -700,11 +702,12 @@ class RotCoilMeas:
         # HEADER
         a('# HEADER')
         a('# ======')
-        a('# label           {}'.format(filename))
-        a('# harmonics       {}'.format(harms))
-        a('# main_harmonic   {} {}'.format(main_harmonic-1,
+        a('# label             {}'.format(filename))
+        a('# harmonics         {}'.format(harms))
+        a('# main_harmonic     {} {}'.format(main_harmonic-1,
                                            main_harmonic_type))
-        a('# units           Ampere  {}'.format(units))
+        a('# rescaling_factor  1.0')
+        a('# units             Ampere  {}'.format(units))
         a('')
         # EXCITATION DATA
         a('# EXCITATION DATA')
@@ -740,6 +743,11 @@ class RotCoilMeas:
             a('# 5. data_set: {}'.format(data_set))
         else:
             a('# 5. data_set: {}'.format('UNDEFINED'))
+        if comments:
+            idx = 6
+            for line in comments:
+                a('# {}. '.format(idx) + line)
+                idx += 1
         a('')
         # OBS
         for line in RotCoilMeas._excdata_obs:
