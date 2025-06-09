@@ -2,8 +2,9 @@
 
 from IPython.display import HTML as _HTML
 
+
 def turn_code_on_off_html():
-    string  = '''<script type="text/javascript">
+    string = '''<script type="text/javascript">
 code_hide=true;
 function code_toggle() {
  if (code_hide){

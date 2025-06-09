@@ -1,7 +1,7 @@
 """Util module."""
 
-import os as _os
 import gzip as _gzip
+import os as _os
 import pickle as _pickle
 
 
@@ -9,7 +9,7 @@ def files_get_matches(folder=None, recursive=True, strs_in=None, strs_out=None):
     if folder is None:
         folder = _os.getcwd()
     if strs_in is None:
-        strs_in = ('.dat','BOB_')
+        strs_in = ('.dat', 'BOB_')
     elif isinstance(strs_in, str):
         strs_in = (strs_in,)
     elif isinstance(strs_out, str):
@@ -22,7 +22,7 @@ def files_get_matches(folder=None, recursive=True, strs_in=None, strs_out=None):
             if recursive:
                 files.extend(files_get_matches(path, recursive, strs_in, strs_out))
         else:
-            strs_in_flag  = [1 if token in path else 0 for token in strs_in]
+            strs_in_flag = [1 if token in path else 0 for token in strs_in]
             if strs_out:
                 strs_out_flag = [1 if token not in path else 0 for token in strs_out]
             else:
@@ -35,7 +35,7 @@ def files_get_matches(folder=None, recursive=True, strs_in=None, strs_out=None):
     if fname[0].isdigit():
         files = sorted(files)
     else:
-        files = sorted(files, key=lambda v:v[-17:])
+        files = sorted(files, key=lambda v: v[-17:])
 
     return files
 
@@ -58,7 +58,7 @@ def save_pickle(filename, **kwargs):
       save
       kwargs   : variables to save:
 
-    EXAMPLES:
+    Examples:
     >>> a = dict({'casa':[1,2], 'bla':3.4})
     >>> b = ['fla',3.42,True]
     >>>save_pickle('teste',a=a,b=b)
