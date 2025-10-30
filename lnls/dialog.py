@@ -1,16 +1,50 @@
 import warnings
+
 warnings.filterwarnings('ignore')
 import os as _os
-from PyQt5.QtWidgets import QApplication, QFileDialog, QWidget, QDesktopWidget
-from PyQt5.QtWidgets import QListView, QTreeView, QFileSystemModel, QGridLayout
-from PyQt5.QtWidgets import QPushButton, QLabel, QLineEdit, QButtonGroup, QRadioButton
-from PyQt5.QtWidgets import QAbstractItemView
-from PyQt5.QtCore import QCoreApplication
+
+try:
+    from PyQt5.QtWidgets import (
+        QApplication,
+        QFileDialog,
+        QWidget,
+        QDesktopWidget,
+    )
+    from PyQt5.QtWidgets import (
+        QListView,
+        QTreeView,
+        QFileSystemModel,
+        QGridLayout,
+    )
+    from PyQt5.QtWidgets import (
+        QPushButton,
+        QLabel,
+        QLineEdit,
+        QRadioButton,
+    )
+    from PyQt5.QtWidgets import QAbstractItemView
+    from PyQt5.QtCore import QCoreApplication
+except ImportError:
+    QApplication,
+    QFileDialog,
+    QWidget,
+    QDesktopWidget = [None, ] * 4
+    QListView,
+    QTreeView,
+    QFileSystemModel,
+    QGridLayout = [None, ] * 4
+    QPushButton,
+    QLabel,
+    QLineEdit,
+    QRadioButton = [None, ] * 4
+
 
 CURDIR = _os.path.abspath(_os.path.curdir)
 
-def directories_dialog(path=None,name='Select Directories'):
+
+def directories_dialog(path=None, name='Select Directories'):
     ok = True
+
     def _pressed_cancel():
         nonlocal ok
         Fi.close()
@@ -31,9 +65,9 @@ def directories_dialog(path=None,name='Select Directories'):
 
     Fi.setFileMode(Fi.DirectoryOnly)
     Fi.setDirectory(path)
-    for view in Fi.findChildren((QListView,QTreeView)):
+    for view in Fi.findChildren((QListView, QTreeView)):
         if isinstance(view.model(), QFileSystemModel):
-             view.setSelectionMode(QAbstractItemView.MultiSelection)
+            view.setSelectionMode(QAbstractItemView.MultiSelection)
     for view in Fi.findChildren(QPushButton):
         if view.text().lower().startswith('&cancel'):
             view.clicked.connect(_pressed_cancel)
@@ -52,22 +86,28 @@ def directories_dialog(path=None,name='Select Directories'):
 
     return ok, list(sel_files2)
 
-def input_dialog(prompt,def_answer=None,name='Type Parameters'):
+
+def input_dialog(prompt, def_answer=None, name='Type Parameters'):
     ok = False
+
     def _pressed_ok():
         nonlocal ok
         w.close()
         app.quit()
         ok |= True
+
     def _pressed_cancel():
         nonlocal ok
         w.close()
         app.quit()
         ok &= False
 
-    if isinstance(prompt,str): prompt = [prompt]
-    if def_answer is None: def_answer = len(prompt)*['']
-    if isinstance(def_answer,str): def_answer = [def_answer]
+    if isinstance(prompt, str):
+        prompt = [prompt]
+    if def_answer is None:
+        def_answer = len(prompt) * ['']
+    if isinstance(def_answer, str):
+        def_answer = [def_answer]
     if len(prompt) != len(def_answer):
         raise IndexError("'prompt' and 'def_answer' must be the same length.")
 
@@ -79,25 +119,26 @@ def input_dialog(prompt,def_answer=None,name='Type Parameters'):
     grid.setSpacing(10)
     edit = []
     for i in range(len(prompt)):
-        title  = QLabel(prompt[i])
-        edit  += [QLineEdit()]
-        if def_answer is not None: edit[i].setText(def_answer[i])
-        grid.addWidget(title, 2*i,  0,1,2)# title, row,col,spanrow,spancol
-        grid.addWidget(edit[i], 2*i+1, 0,1,2)
-    #Ok Button
+        title = QLabel(prompt[i])
+        edit += [QLineEdit()]
+        if def_answer is not None:
+            edit[i].setText(def_answer[i])
+        grid.addWidget(title, 2 * i, 0, 1, 2)  # title, row,col,spanrow,spancol
+        grid.addWidget(edit[i], 2 * i + 1, 0, 1, 2)
+    # Ok Button
     qbtn = QPushButton('Ok', w)
     qbtn.clicked.connect(_pressed_ok)
     qbtn.resize(qbtn.sizeHint())
-    grid.addWidget(qbtn, 2*(i+1), 0)
-    #Cancel Button
+    grid.addWidget(qbtn, 2 * (i + 1), 0)
+    # Cancel Button
     qbtn = QPushButton('Cancel', w)
     qbtn.clicked.connect(_pressed_cancel)
     qbtn.resize(qbtn.sizeHint())
-    grid.addWidget(qbtn, 2*(i+1), 1)
+    grid.addWidget(qbtn, 2 * (i + 1), 1)
 
-    #Defining the layout of the window:
+    # Defining the layout of the window:
     w.setLayout(grid)
-    w.resize(50, i*50)
+    w.resize(50, i * 50)
     qr = w.frameGeometry()
     cp = QDesktopWidget().availableGeometry().center()
     qr.moveCenter(cp)
@@ -111,14 +152,16 @@ def input_dialog(prompt,def_answer=None,name='Type Parameters'):
         text += [ed.text()]
     return ok, text
 
-def radio_dialog(options, name='Selection', default_idx=0):
 
+def radio_dialog(options, name='Selection', default_idx=0):
     ok = False
+
     def _pressed_ok():
         nonlocal ok
         w.close()
         app.quit()
         ok |= True
+
     def _pressed_cancel():
         nonlocal ok
         w.close()
@@ -137,24 +180,22 @@ def radio_dialog(options, name='Selection', default_idx=0):
         if i == default_idx:
             r.setChecked(True)
         edit.append(r)
-        grid.addWidget(r,0,i)
+        grid.addWidget(r, 0, i)
 
-
-
-    #Ok Button
+    # Ok Button
     qbtn = QPushButton('Ok', w)
     qbtn.clicked.connect(_pressed_ok)
     qbtn.resize(qbtn.sizeHint())
-    grid.addWidget(qbtn, 2*(i+1), 0)
-    #Cancel Button
+    grid.addWidget(qbtn, 2 * (i + 1), 0)
+    # Cancel Button
     qbtn = QPushButton('Cancel', w)
     qbtn.clicked.connect(_pressed_cancel)
     qbtn.resize(qbtn.sizeHint())
-    grid.addWidget(qbtn, 2*(i+1), 1)
+    grid.addWidget(qbtn, 2 * (i + 1), 1)
 
-    #Defining the layout of the window:
+    # Defining the layout of the window:
     w.setLayout(grid)
-    w.resize(50, i*50)
+    w.resize(50, i * 50)
     qr = w.frameGeometry()
     cp = QDesktopWidget().availableGeometry().center()
     qr.moveCenter(cp)
@@ -164,5 +205,6 @@ def radio_dialog(options, name='Selection', default_idx=0):
     app.exec_()
 
     for r in edit:
-        if r.isChecked(): text = r.text()
+        if r.isChecked():
+            text = r.text()
     return ok, text
