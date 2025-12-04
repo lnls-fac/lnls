@@ -40,6 +40,7 @@ except ImportError:
 
 
 CURDIR = _os.path.abspath(_os.path.curdir)
+warnings.filterwarnings('ignore')
 
 
 def directories_dialog(path=None, name='Select Directories'):

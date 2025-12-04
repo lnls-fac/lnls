@@ -3,11 +3,11 @@
 """."""
 
 import os as _os
-import sys as _sys
-from siriuspy import util as _util
 import pickle as _pic
-import numpy as _np
+import sys as _sys
 
+import numpy as _np
+from siriuspy import util as _util
 
 # TODO: funcionalities of this module are being moved to
 # fieldmaptrack.hallsensor eventually this module should be deleted and thus
@@ -234,14 +234,16 @@ _help = Templates.help
 class FMapAnalysisTB:
     """."""
 
-    def __init__(self,
-                 magnet,
-                 curlabel,
-                 path_analysis,
-                 path_fmap,
-                 beam_energy,
-                 rx_init,
-                 s_step):
+    def __init__(
+        self,
+        magnet,
+        curlabel,
+        path_analysis,
+        path_fmap,
+        beam_energy,
+        rx_init,
+        s_step,
+    ):
         """."""
         self.magnet = magnet
         self.curlabel = curlabel
@@ -291,7 +293,7 @@ class FMapAnalysisTB:
         self.multipoles_normal = {}
         for line in lines:
             if 'r0_for_relative_multipoles' in line:
-                self.reference_r0 = float(line.split()[1])/1000.0
+                self.reference_r0 = float(line.split()[1]) / 1000.0
             for n in range(30):
                 nstr = 'n={:02d}'.format(n)
                 if nstr in line:
@@ -373,7 +375,7 @@ class FMapAnalysisTB:
         t = text
         t = t.replace('TIMESTAMP', _util.get_timestamp())
         t = t.replace('MAGNET', self.magnet)
-        t = t.replace('CONFIG_NAME', self.magnet+'-'+self.curlabel)
+        t = t.replace('CONFIG_NAME', self.magnet + '-' + self.curlabel)
         t = t.replace('FIELDMAP_FNAME', self.path_fmap)
         t = t.replace('BEAM_ENERGY', str(self.beam_energy))
         t = t.replace('RX_INIT', str(self.rx_init))
@@ -384,14 +386,16 @@ class FMapAnalysisTB:
 class FMapAnalysisBO:
     """."""
 
-    def __init__(self,
-                 magnet,
-                 curlabel,
-                 path_analysis,
-                 path_fmap,
-                 beam_energy,
-                 rx_init,
-                 s_step):
+    def __init__(
+        self,
+        magnet,
+        curlabel,
+        path_analysis,
+        path_fmap,
+        beam_energy,
+        rx_init,
+        s_step,
+    ):
         """."""
         self.magnet = magnet
         self.curlabel = curlabel
@@ -555,7 +559,7 @@ class FMapAnalysisBO:
         t = text
         t = t.replace('TIMESTAMP', _util.get_timestamp())
         t = t.replace('MAGNET', self.magnet)
-        t = t.replace('CONFIG_NAME', self.magnet+'-'+self.curlabel)
+        t = t.replace('CONFIG_NAME', self.magnet + '-' + self.curlabel)
         t = t.replace('FIELDMAP_FNAME', self.path_fmap)
         t = t.replace('BEAM_ENERGY', str(self.beam_energy))
         t = t.replace('RX_INIT', str(self.rx_init))
@@ -568,43 +572,51 @@ class FMapAnalysisProductionTB:
 
     _path_analysis = (
         '/home/fac_files/lnls-ima/tb-dipoles/model-03'
-        '/analysis/hallprobe/excitation_curve/x0-4p6467mm-15deg/')
+        '/analysis/hallprobe/excitation_curve/x0-4p6467mm-15deg/'
+    )
 
     _path_measurements = (
         '/home/fac_files/lnls-ima/tb-dipoles/model-03'
-        '/measurement/magnetic/hallprobe/excitation_curve/')
+        '/measurement/magnetic/hallprobe/excitation_curve/'
+    )
 
-    def __init__(self,
-                 magnet,
-                 curlabel,
-                 fmap_fname,
-                 beam_energy,
-                 rx_init,
-                 s_step):
+    def __init__(
+        self, magnet, curlabel, fmap_fname, beam_energy, rx_init, s_step
+    ):
         """."""
         self.magnet = magnet
         self.curlabel = curlabel
         self.beam_energy = beam_energy
-        self.path_analysis = FMapAnalysisProductionTB._path_analysis + \
-            self.magnet + '/' + self.curlabel + '/'
-        self.path_measurement = FMapAnalysisProductionTB._path_measurements + \
-            self.magnet + '/'
+        self.path_analysis = (
+            FMapAnalysisProductionTB._path_analysis
+            + self.magnet
+            + '/'
+            + self.curlabel
+            + '/'
+        )
+        self.path_measurement = (
+            FMapAnalysisProductionTB._path_measurements + self.magnet + '/'
+        )
         self.path_fmap = self.path_measurement + fmap_fname
         self.s_step = abs(s_step)
-        self.analysis_neg = FMapAnalysisTB(self.magnet,
-                                           self.curlabel,
-                                           self.path_analysis + 'z-negative',
-                                           self.path_fmap,
-                                           self.beam_energy,
-                                           rx_init,
-                                           -1.0*self.s_step)
-        self.analysis_pos = FMapAnalysisTB(self.magnet,
-                                           self.curlabel,
-                                           self.path_analysis + 'z-positive',
-                                           self.path_fmap,
-                                           self.beam_energy,
-                                           rx_init,
-                                           +1.0*self.s_step)
+        self.analysis_neg = FMapAnalysisTB(
+            self.magnet,
+            self.curlabel,
+            self.path_analysis + 'z-negative',
+            self.path_fmap,
+            self.beam_energy,
+            rx_init,
+            -1.0 * self.s_step,
+        )
+        self.analysis_pos = FMapAnalysisTB(
+            self.magnet,
+            self.curlabel,
+            self.path_analysis + 'z-positive',
+            self.path_fmap,
+            self.beam_energy,
+            rx_init,
+            +1.0 * self.s_step,
+        )
 
     def files_create(self):
         """."""
@@ -622,30 +634,35 @@ class FMapAnalysisProductionTB:
         self.analysis_neg.files_read_results_rawfield()
         self.analysis_pos.files_read_results_trajectory()
         self.analysis_neg.files_read_results_trajectory()
-        self.results_angle = self.analysis_pos.results_angle - \
-            self.analysis_neg.results_angle
+        self.results_angle = (
+            self.analysis_pos.results_angle - self.analysis_neg.results_angle
+        )
         self.analysis_pos.files_read_results_multipoles()
         self.analysis_neg.files_read_results_multipoles()
         self.multipoles_normal = {}
         self.multipoles_normal_relative = {}
         r0 = self.analysis_pos.reference_r0
-        mm = (self.analysis_pos.multipoles_normal[0] +
-              self.analysis_neg.multipoles_normal[0]) * r0**0
+        mm = (
+            self.analysis_pos.multipoles_normal[0]
+            + self.analysis_neg.multipoles_normal[0]
+        ) * r0**0
         for n, v in self.analysis_pos.multipoles_normal.items():
-            self.multipoles_normal[n] = \
-                self.analysis_pos.multipoles_normal[n] + \
-                self.analysis_neg.multipoles_normal[n]
-            self.multipoles_normal_relative[n] = \
+            self.multipoles_normal[n] = (
+                self.analysis_pos.multipoles_normal[n]
+                + self.analysis_neg.multipoles_normal[n]
+            )
+            self.multipoles_normal_relative[n] = (
                 self.multipoles_normal[n] * (r0**n) / mm
+            )
 
     def run(self):
         """."""
         self.analysis_pos.files_run()
         self.analysis_neg.files_run()
 
-    def calc_multipoles_kick(self, xmax,
-                             multipoles_normal=None,
-                             excluded_monomials=None):
+    def calc_multipoles_kick(
+        self, xmax, multipoles_normal=None, excluded_monomials=None
+    ):
         """."""
         if excluded_monomials is None:
             excluded_monomials = (0,)
@@ -666,40 +683,53 @@ class FMapAnalysisProductionBO:
 
     _path_analysis = (
         '/home/fac_files/lnls-ima/bo-dipoles/model-09'
-        '/analysis/hallprobe/production/')
+        '/analysis/hallprobe/production/'
+    )
 
     _path_measurements = (
         '/home/fac_files/lnls-ima/bo-dipoles/model-09'
-        '/measurement/magnetic/hallprobe/production/')
+        '/measurement/magnetic/hallprobe/production/'
+    )
 
-    def __init__(self,
-                 magnet,
-                 curlabel,
-                 fmap_fname,
-                 beam_energy,
-                 s_step):
+    def __init__(self, magnet, curlabel, fmap_fname, beam_energy, s_step):
         """."""
         self.magnet = magnet
         self.curlabel = curlabel
         self.beam_energy = beam_energy
-        self.path_analysis = FMapAnalysisProductionBO._path_analysis + \
-            self.magnet + '/' + 'M1' + '/' + self.curlabel + '/'
-        self.path_measurement = FMapAnalysisProductionBO._path_measurements + \
-            self.magnet + '/' + 'M1' + '/'
+        self.path_analysis = (
+            FMapAnalysisProductionBO._path_analysis
+            + self.magnet
+            + '/'
+            + 'M1'
+            + '/'
+            + self.curlabel
+            + '/'
+        )
+        self.path_measurement = (
+            FMapAnalysisProductionBO._path_measurements
+            + self.magnet
+            + '/'
+            + 'M1'
+            + '/'
+        )
         self.path_fmap = self.path_measurement + fmap_fname
         self.s_step = abs(s_step)
-        self.analysis_neg = FMapAnalysisBO(self.magnet,
-                                           self.curlabel,
-                                           self.path_analysis + 'z-negative',
-                                           self.path_fmap,
-                                           self.beam_energy,
-                                           -1.0*self.s_step)
-        self.analysis_pos = FMapAnalysisBO(self.magnet,
-                                           self.curlabel,
-                                           self.path_analysis + 'z-positive',
-                                           self.path_fmap,
-                                           self.beam_energy,
-                                           +1.0*self.s_step)
+        self.analysis_neg = FMapAnalysisBO(
+            self.magnet,
+            self.curlabel,
+            self.path_analysis + 'z-negative',
+            self.path_fmap,
+            self.beam_energy,
+            -1.0 * self.s_step,
+        )
+        self.analysis_pos = FMapAnalysisBO(
+            self.magnet,
+            self.curlabel,
+            self.path_analysis + 'z-positive',
+            self.path_fmap,
+            self.beam_energy,
+            +1.0 * self.s_step,
+        )
 
     def files_create(self):
         """."""
@@ -720,33 +750,51 @@ class FMapAnalysisProductionBO:
 class HallProbeAnalysisBO:
     """."""
 
-    _path = ('/home/fac_files/lnls-ima/bo-dipoles/model-09/'
-             'analysis/hallprobe/excitation_curve/')
+    _path = (
+        '/home/fac_files/lnls-ima/bo-dipoles/model-09/'
+        'analysis/hallprobe/excitation_curve/'
+    )
 
     def __init__(self, dataset, name, current):
         """."""
         self.dataset = dataset
         self.name = name
         self.current = current
-        self.current_pos, self.beam_energy_pos, \
-            self.angle_pos, \
-            self.intn0_pos, self.intn1_pos, self.intn2_pos = \
-            self._read_analysis('z-positive')
-        self.current_neg, self.beam_energy_neg, \
-            self.angle_neg, \
-            self.intn0_neg, self.intn1_neg, self.intn2_neg = \
-            self._read_analysis('z-negative')
-        self.current = 0.5*(self.current_pos + self.current_neg)
-        self.beam_energy = 0.5*(self.beam_energy_pos + self.beam_energy_neg)
+        (
+            self.current_pos,
+            self.beam_energy_pos,
+            self.angle_pos,
+            self.intn0_pos,
+            self.intn1_pos,
+            self.intn2_pos,
+        ) = self._read_analysis('z-positive')
+        (
+            self.current_neg,
+            self.beam_energy_neg,
+            self.angle_neg,
+            self.intn0_neg,
+            self.intn1_neg,
+            self.intn2_neg,
+        ) = self._read_analysis('z-negative')
+        self.current = 0.5 * (self.current_pos + self.current_neg)
+        self.beam_energy = 0.5 * (self.beam_energy_pos + self.beam_energy_neg)
         self.angle = self.angle_pos - self.angle_neg  # corrects sign error
         self.intn0 = self.intn0_pos + self.intn0_neg
         self.intn1 = self.intn1_pos + self.intn1_neg
         self.intn2 = self.intn2_pos + self.intn2_neg
 
     def _read_analysis(self, side):
-
-        fname = HallProbeAnalysisBO._path + self.dataset + '/' + \
-                self.name + '/' + self.current + '/' + side + '/analysis.txt'
+        fname = (
+            HallProbeAnalysisBO._path
+            + self.dataset
+            + '/'
+            + self.name
+            + '/'
+            + self.current
+            + '/'
+            + side
+            + '/analysis.txt'
+        )
         with open(fname, 'r') as f:
             lines = f.readlines()
         for line in lines:
@@ -783,8 +831,9 @@ class DipolesSetBO:
         for magnet, currlabels in magnets.items():
             self._data[magnet] = dict()
             for currlabel in currlabels:
-                self._data[magnet][currlabel] = \
-                    HallProbeAnalysisBO(self.dataset, magnet, currlabel)
+                self._data[magnet][currlabel] = HallProbeAnalysisBO(
+                    self.dataset, magnet, currlabel
+                )
 
     @property
     def magnet_labels(self):
@@ -867,10 +916,10 @@ class DipolesSetBO:
         magnets, currents, angles = self.get_angles()
         spec = DipolesSetBO.spec_angle
         xrms = self.currents_minmax()
-        plt.plot(xrms, (+DipolesSetBO.spec_angle_rms,)*2, 'k--')
-        plt.plot(xrms, (-DipolesSetBO.spec_angle_rms,)*2, 'k--')
+        plt.plot(xrms, (+DipolesSetBO.spec_angle_rms,) * 2, 'k--')
+        plt.plot(xrms, (-DipolesSetBO.spec_angle_rms,) * 2, 'k--')
         for i in range(len(magnets)):
-            error = 100 * (_np.array(angles[i]) - spec)/spec
+            error = 100 * (_np.array(angles[i]) - spec) / spec
             plt.plot(currents[i], error, 'o-', label=magnets[i])
         plt.xlabel('Current [A]')
         plt.ylabel('Angle Error w.r.t. to Spec [%]')
@@ -881,13 +930,13 @@ class DipolesSetBO:
         magnets, currents, quadrupoles = self.get_quadrupoles()
         spec0 = DipolesSetBO.spec_quadrupole
         xrms = self.currents_minmax()
-        plt.plot(xrms, (+DipolesSetBO.spec_quadrupole_rms,)*2, 'k--')
-        plt.plot(xrms, (-DipolesSetBO.spec_quadrupole_rms,)*2, 'k--')
+        plt.plot(xrms, (+DipolesSetBO.spec_quadrupole_rms,) * 2, 'k--')
+        plt.plot(xrms, (-DipolesSetBO.spec_quadrupole_rms,) * 2, 'k--')
         for i in range(len(magnets)):
             error = []
             for j in range(len(currents[i])):
-                spec = spec0 * currents[i][j]/DipolesSetBO.spec_ref_current
-                error.append(100 * (quadrupoles[i][j] - spec)/spec)
+                spec = spec0 * currents[i][j] / DipolesSetBO.spec_ref_current
+                error.append(100 * (quadrupoles[i][j] - spec) / spec)
             plt.plot(currents[i], error, 'o-', label=magnets[i])
         plt.xlabel('Current [A]')
         plt.ylabel('Quadrupole Error w.r.t. to Spec [%]')
@@ -898,13 +947,13 @@ class DipolesSetBO:
         magnets, currents, sextupoles = self.get_sextupoles()
         spec0 = DipolesSetBO.spec_sextupole
         xrms = self.currents_minmax()
-        plt.plot(xrms, (+DipolesSetBO.spec_sextupole_rms,)*2, 'k--')
-        plt.plot(xrms, (-DipolesSetBO.spec_sextupole_rms,)*2, 'k--')
+        plt.plot(xrms, (+DipolesSetBO.spec_sextupole_rms,) * 2, 'k--')
+        plt.plot(xrms, (-DipolesSetBO.spec_sextupole_rms,) * 2, 'k--')
         for i in range(len(magnets)):
             error = []
             for j in range(len(currents[i])):
-                spec = spec0 * currents[i][j]/DipolesSetBO.spec_ref_current
-                error.append(100 * (sextupoles[i][j] - spec)/spec)
+                spec = spec0 * currents[i][j] / DipolesSetBO.spec_ref_current
+                error.append(100 * (sextupoles[i][j] - spec) / spec)
             plt.plot(currents[i], error, 'o-', label=magnets[i])
         plt.xlabel('Current [A]')
         plt.ylabel('Sextupole Error w.r.t. to Spec [%]')
@@ -921,15 +970,18 @@ def get_summary(dst, cur, pos):
         'defined by measured fieldmap with magnet excitated with current of'
         ' {1:s},\n'
         'corresponding to nominal particle energy of 3 GeV.\n'
-        '\n').format(pos, cur)
+        '\n'
+    ).format(pos, cur)
 
     fmt = '{0:^10s} | {1:^11s} |  {2:^11s} | {3:^11s} | {4:^11s} |\n'
-    data += fmt.format('Dipole', 'Angle [°]', 'Dint [T.m]', 'Gint [T]',
-                       'Sint [T/m]')
+    data += fmt.format(
+        'Dipole', 'Angle [°]', 'Dint [T.m]', 'Gint [T]', 'Sint [T/m]'
+    )
     data += fmt.format('', '', '', '', '')
 
-    fmt = ('{0:^10s} | {1:^+11.5f} |  {2:^+11.5f} | {3:^+11.5f} |'
-           ' {4:^+11.5f} |\n')
+    fmt = (
+        '{0:^10s} | {1:^+11.5f} |  {2:^+11.5f} | {3:^+11.5f} | {4:^+11.5f} |\n'
+    )
     for i in range(4, 58):
         name = 'bd-{0:03d}'.format(i)
         fi = dst + '/' + name + '/M1/{0:s}/z-{1:s}/'.format(cur, pos)
@@ -939,7 +991,12 @@ def get_summary(dst, cur, pos):
             config = _pic.load(fi)
         si = 1 if pos == 'positive' else -1
         multi = config.multipoles.normal_multipoles_integral
-        theta = si*_np.arctan(config.traj.px[-1]/config.traj.pz[-1])*180/_np.pi
+        theta = (
+            si
+            * _np.arctan(config.traj.px[-1] / config.traj.pz[-1])
+            * 180
+            / _np.pi
+        )
         data += fmt.format(name, theta, multi[0], multi[1], multi[2])
 
     print(data)
@@ -956,11 +1013,15 @@ def get_new_energy(dst, cur):
             with open(fi + cur + '.pkl', 'rb') as fi:
                 config = _pic.load(fi)
             si = 1 if pos == 'positive' else -1
-            theta[i-4] += \
-                si*_np.arctan(config.traj.px[-1]/config.traj.pz[-1])*180/_np.pi
+            theta[i - 4] += (
+                si
+                * _np.arctan(config.traj.px[-1] / config.traj.pz[-1])
+                * 180
+                / _np.pi
+            )
 
     print(theta)
-    print('New Energy = {0:7.5f} GeV'.format(theta.mean()/-7.2 * 3))
+    print('New Energy = {0:7.5f} GeV'.format(theta.mean() / -7.2 * 3))
 
 
 def print_help():

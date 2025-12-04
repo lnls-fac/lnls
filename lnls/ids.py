@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 
+import os as _os
 from tkinter import Tk as _Tk
 from tkinter.filedialog import askopenfilename as _askopenfilename
-import lnls as _app
-import os as _os
-import numpy as _np
-import matplotlib.pyplot as _plt
+
 import mathphys as _mathphys
+import matplotlib.pyplot as _plt
+import numpy as _np
+
+import lnls as _app
+
 
 def read_kicktable(fname):
-
     # reads raw data from file
     lines = [line.strip() for line in open(fname)]
 
@@ -17,7 +19,7 @@ def read_kicktable(fname):
     data, idx = [], []
     for i in range(len(lines)):
         if lines[i] == 'START':
-            idx.append(i+1)
+            idx.append(i + 1)
             continue
         try:
             data.append(float(lines[i]))
@@ -27,47 +29,62 @@ def read_kicktable(fname):
 
     # reads kickx
     id_posx, id_posy = [float(word) for word in lines[idx[0]].split()], []
-    id_kickx = _np.zeros((id_nrpts_y,id_nrpts_x))
-    data = lines[idx[0]+1:idx[1]-1]
+    id_kickx = _np.zeros((id_nrpts_y, id_nrpts_x))
+    data = lines[idx[0] + 1 : idx[1] - 1]
     idx_y = 0
     for line in data:
         try:
             datum = [float(word) for word in line.split()]
             id_posy.append(datum[0])
-            id_kickx[idx_y,:] = datum[1:]
+            id_kickx[idx_y, :] = datum[1:]
             idx_y += 1
         except ValueError:
             pass
 
     # reads kicky
-    id_kicky = _np.zeros((id_nrpts_y,id_nrpts_x))
-    data = lines[idx[1]+1:]
+    id_kicky = _np.zeros((id_nrpts_y, id_nrpts_x))
+    data = lines[idx[1] + 1 :]
     idx_y = 0
     for line in data:
         try:
             datum = [float(word) for word in line.split()]
-            id_kicky[idx_y,:] = datum[1:]
+            id_kicky[idx_y, :] = datum[1:]
             idx_y += 1
         except ValueError:
             pass
 
     return (id_length, id_posx, id_posy, id_kickx, id_kicky)
 
-def select_kicktable_file():
 
-    default_folder = _os.path.join(_app.folder_mml_sirius_ids,'id_modelling')
-    opt = {'initialdir':default_folder, 'title':'select kicktable file', 'defaultextension':'.txt', 'filetypes':[('text files', '*.txt')]}
-    _Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
-    fname = _askopenfilename(**opt) # show an "Open" dialog box and return the path to the selected file
+def select_kicktable_file():
+    default_folder = _os.path.join(_app.folder_mml_sirius_ids, 'id_modelling')
+    opt = {
+        'initialdir': default_folder,
+        'title': 'select kicktable file',
+        'defaultextension': '.txt',
+        'filetypes': [('text files', '*.txt')],
+    }
+    # we don't want a full GUI, so keep the root window from appearing
+    _Tk().withdraw()
+    fname = _askopenfilename(
+        **opt
+    )  # show an "Open" dialog box and return the path to the selected file
     return fname
 
-def plot_kicktable(fname=None, energy = 3.0, print_flag=True, savefigs_flag=True, display_flag=False):
-    """Plot ID kicktable stored in a file
+
+def plot_kicktable(
+    fname=None,
+    energy=3.0,
+    print_flag=True,
+    savefigs_flag=True,
+    display_flag=False,
+):
+    """Plot ID kicktable stored in a file.
 
     Accepts name of file witk ID kicktable. If not provided a dialogbox will
     show for users input.
 
-    Keyword arguments:
+    Keyword Arguments:
     fname          -- Name of the file with ID kicktable
     energy         -- Beam energy [GeV]
     print_flag     -- True/False. If true (default), prints kicktable info in stdout.
@@ -82,7 +99,12 @@ def plot_kicktable(fname=None, energy = 3.0, print_flag=True, savefigs_flag=True
     id_kicky  --
 
     """
-    #fname = _os.path.join(_app.folder_mml_sirius_ids,'id_modelling','U25','U25_kicktable_4meters.txt')
+    # fname = _os.path.join(
+    #     _app.folder_mml_sirius_ids,
+    #     'id_modelling',
+    #     'U25',
+    #     'U25_kicktable_4meters.txt'
+    # )
     # if fname is missing opens dialogbox for users selection of filename
     if fname is None:
         fname = select_kicktable_file()
@@ -97,18 +119,26 @@ def plot_kicktable(fname=None, energy = 3.0, print_flag=True, savefigs_flag=True
         print('length[m]: {0}'.format(id_length))
         print('nrpts_x  : {0}'.format(len(id_posx)))
         print('nrpts_y  : {0}'.format(len(id_posy)))
-        print('posx[mm] : {0} ... {1}'.format(1000*id_posx[0], 1000*id_posx[-1]))
-        print('posy[mm] : {0} ... {1}'.format(1000*id_posy[0], 1000*id_posy[-1]))
+        print(
+            'posx[mm] : {0} ... {1}'.format(
+                1000 * id_posx[0], 1000 * id_posx[-1]
+            )
+        )
+        print(
+            'posy[mm] : {0} ... {1}'.format(
+                1000 * id_posy[0], 1000 * id_posy[-1]
+            )
+        )
 
-    brho,_,_,_,_ = _mathphys.beam_optics.beam_rigidity(energy = energy * 1e9)
+    brho, _, _, _, _ = _mathphys.beam_optics.beam_rigidity(energy=energy * 1e9)
     _os.path.basename(fname)
 
     # kickx-x
-    plot_idx = [int(len(id_posy)/2), int(len(id_posy)/4), 0]
+    plot_idx = [int(len(id_posy) / 2), int(len(id_posy) / 4), 0]
     leg = []
     for i in plot_idx:
-        _plt.plot(1000*_np.array(id_posx), (1e6/brho**2)*id_kickx[i,:])
-        leg.append('{0:+.2f} mm'.format(1000*id_posy[i]))
+        _plt.plot(1000 * _np.array(id_posx), (1e6 / brho**2) * id_kickx[i, :])
+        leg.append('{0:+.2f} mm'.format(1000 * id_posy[i]))
     _plt.xlabel('posx [mm]'), _plt.ylabel('kickx [um]')
     _plt.grid(), _plt.suptitle('Insertion Device Horizontal Kick')
     _plt.legend(leg)
@@ -119,11 +149,11 @@ def plot_kicktable(fname=None, energy = 3.0, print_flag=True, savefigs_flag=True
     _plt.clf()
 
     # kickx-y
-    plot_idx = [int(len(id_posx)/2), int(len(id_posx)/4), 0]
+    plot_idx = [int(len(id_posx) / 2), int(len(id_posx) / 4), 0]
     leg = []
     for i in plot_idx:
-        _plt.plot(1000*_np.array(id_posy), (1e6/brho**2)*id_kickx[:,i])
-        leg.append('{0:+.2f} mm'.format(1000*id_posx[i]))
+        _plt.plot(1000 * _np.array(id_posy), (1e6 / brho**2) * id_kickx[:, i])
+        leg.append('{0:+.2f} mm'.format(1000 * id_posx[i]))
     _plt.xlabel('posy [mm]'), _plt.ylabel('kickx [um]')
     _plt.grid(), _plt.suptitle('Insertion Device Horizontal Kick')
     _plt.legend(leg)
@@ -134,11 +164,11 @@ def plot_kicktable(fname=None, energy = 3.0, print_flag=True, savefigs_flag=True
     _plt.clf()
 
     # kicky
-    plot_idx = [int(len(id_posx)/2), int(len(id_posx)/4), 0]
+    plot_idx = [int(len(id_posx) / 2), int(len(id_posx) / 4), 0]
     leg = []
     for i in plot_idx:
-        _plt.plot(1000*_np.array(id_posy), (1e6/brho**2)*id_kicky[:,i])
-        leg.append('{0:+.2f} mm'.format(1000*id_posx[i]))
+        _plt.plot(1000 * _np.array(id_posy), (1e6 / brho**2) * id_kicky[:, i])
+        leg.append('{0:+.2f} mm'.format(1000 * id_posx[i]))
     _plt.xlabel('posy [mm]'), _plt.ylabel('kicky [um]')
     _plt.grid(), _plt.suptitle('Insertion Device Vertical Kick')
     _plt.legend(leg)
@@ -149,11 +179,11 @@ def plot_kicktable(fname=None, energy = 3.0, print_flag=True, savefigs_flag=True
     _plt.clf()
 
     # kicky
-    plot_idx = [int(len(id_posy)/2), int(len(id_posy)/4), 0]
+    plot_idx = [int(len(id_posy) / 2), int(len(id_posy) / 4), 0]
     leg = []
     for i in plot_idx:
-        _plt.plot(1000*_np.array(id_posx), (1e6/brho**2)*id_kicky[i,:])
-        leg.append('{0:+.2f} mm'.format(1000*id_posy[i]))
+        _plt.plot(1000 * _np.array(id_posx), (1e6 / brho**2) * id_kicky[i, :])
+        leg.append('{0:+.2f} mm'.format(1000 * id_posy[i]))
     _plt.xlabel('posx [mm]'), _plt.ylabel('kicky [um]')
     _plt.grid(), _plt.suptitle('Insertion Device Vertical Kick')
     _plt.legend(leg)

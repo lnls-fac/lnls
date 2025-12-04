@@ -1,8 +1,8 @@
 """Repeating timer."""
 
+import signal as _signal
 import threading as _threading
 import time as _time
-import signal as _signal
 
 
 class TimerError(Exception):
@@ -15,7 +15,7 @@ class Timer(object):
     """
 
     def __init__(self, interval, function, signal_handler=None, args=(), kwargs={}):
-        """interval -- interval between function calls, in seconds
+        """Interval -- interval between function calls, in seconds
         function -- function to be called
         args -- tuple of arguments to be passed to function
         kwargs -- dictionary of arguments to be passed to function
@@ -36,7 +36,7 @@ class Timer(object):
 
     @interval.setter
     def interval(self, value):
-        """value -- new interval in seconds"""
+        """Value -- new interval in seconds"""
         if self._is_running:
             raise TimerError('timer is running')
         else:
