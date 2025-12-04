@@ -1,7 +1,8 @@
+"""."""
 import os as _os
 
-from lnls.timer import *
+from lnls.timer import Timer, TimerError
 
-from . import ids, notebook, rotating_coil, utils
+from . import dialog, ids, rotating_coil, utils
 
-__all__ = ['utils', 'rotating_coil', 'ids', 'dialog', 'notebook']
+__all__ = ['utils', 'rotating_coil', 'ids', 'dialog']

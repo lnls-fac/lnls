@@ -40,17 +40,6 @@ def files_get_matches(folder=None, recursive=True, strs_in=None, strs_out=None):
     return files
 
 
-def flatten(l):
-    try:
-        l[0]
-        r = []
-        for e in l:
-            r.extend(flatten(e))
-        return r
-    except:
-        return [l]
-
-
 def save_pickle(filename, **kwargs):
     """Save variables in gzip compressed pickle format as a dictionary.
     INPUTS:

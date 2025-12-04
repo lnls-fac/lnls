@@ -1,12 +1,43 @@
-"""."""
-
-import os as _os
 import warnings
 
-from PyQt5.QtCore import QCoreApplication
-from PyQt5.QtWidgets import QAbstractItemView, QApplication, QDesktopWidget, \
-    QFileDialog, QFileSystemModel, QGridLayout, QLabel, QLineEdit, QListView, \
-    QPushButton, QRadioButton, QTreeView, QWidget
+warnings.filterwarnings('ignore')
+import os as _os
+
+try:
+    from PyQt5.QtWidgets import (
+        QApplication,
+        QFileDialog,
+        QWidget,
+        QDesktopWidget,
+    )
+    from PyQt5.QtWidgets import (
+        QListView,
+        QTreeView,
+        QFileSystemModel,
+        QGridLayout,
+    )
+    from PyQt5.QtWidgets import (
+        QPushButton,
+        QLabel,
+        QLineEdit,
+        QRadioButton,
+    )
+    from PyQt5.QtWidgets import QAbstractItemView
+    from PyQt5.QtCore import QCoreApplication
+except ImportError:
+    QApplication,
+    QFileDialog,
+    QWidget,
+    QDesktopWidget = [None, ] * 4
+    QListView,
+    QTreeView,
+    QFileSystemModel,
+    QGridLayout = [None, ] * 4
+    QPushButton,
+    QLabel,
+    QLineEdit,
+    QRadioButton = [None, ] * 4
+
 
 CURDIR = _os.path.abspath(_os.path.curdir)
 warnings.filterwarnings('ignore')
